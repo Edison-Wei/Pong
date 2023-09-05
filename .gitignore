@@ -24,3 +24,5 @@ hs_err_pid*
 replay_pid*
 Pong/Javafx aarch/
 Pong/Javafx x86/
+Pong/Pong_Game/bin/pong/Starting
+Pong/Pong_Game/src/pong/Starting.java

@@ -1,4 +1,4 @@
-package Pong;
+package pong;
 
 import java.util.ArrayList;
 

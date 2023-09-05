@@ -1,4 +1,4 @@
-package Pong;
+package pong;
 
 public class Ball {
 	int x;
@@ -13,4 +13,5 @@ public class Ball {
 		// Find a way to send the ball in a random direction
 		return 0;
 	}
+	
 }
