@@ -3,10 +3,13 @@ package pong;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -18,7 +21,6 @@ import javafx.stage.Stage;
 public class Main extends Application {
 	
 	Pane rootPane;
-	GameHandler game;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -41,6 +43,14 @@ public class Main extends Application {
 	
 	// Creates and adds the collection of nodes to the rootPane
 	void menuScreen() {
+		
+		StackPane menu = createMenuScreen();
+		menu.setAlignment(Pos.CENTER);
+		
+		rootPane.getChildren().add(menu);
+	}
+	
+	public StackPane createMenuScreen() {
 		Text title = createText("Pong", 15);
 		
 		Button start = new Button("Start");
@@ -56,11 +66,11 @@ public class Main extends Application {
 			}
 		});
 		
-		Pane menu = new Pane(title, start);
-		
-		rootPane.getChildren().add(menu);
+		return new StackPane(title,start);
 	}
 	
+	
+	// Creates the Game environment for Pong to be played on 
 	void gameScreen() {
 		rootPane.getChildren().remove(0);
 		
@@ -79,7 +89,7 @@ public class Main extends Application {
 		
 		rootPane.getChildren().add(gamePane);
 		
-		// create gamehandler
+		new GameHandler(rootPane);
 	}
 	
 	// Returns a Text object with the given String and font size
@@ -95,5 +105,9 @@ public class Main extends Application {
 //	void difficulty() {
 //		
 //	}
+	
+	public void addchild(Node node) {
+		rootPane.getChildren().add(node);
+	}
 
 }
