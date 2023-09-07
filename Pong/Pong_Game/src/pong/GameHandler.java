@@ -1,19 +1,21 @@
 package pong;
 
 import javafx.scene.layout.Pane;
-import javafx.scene.shape.Rectangle;
+import javafx.scene.paint.Color;
 
 public class GameHandler {
-	
+
 	Pane rootPane;
-	Main menu;
+	Paddle player;
+	Paddle bot;
 	
 	GameHandler(Pane rootPane) {
 		this.rootPane = rootPane;
-		menu = new Main();
+		player = new Paddle(20, 145, Color.BLUE);
+		bot = new Paddle(460, 145, Color.RED);
 		
-		Rectangle box = new Rectangle(20,30);
-		
-		rootPane.getChildren().add(box);
+		rootPane.getChildren().addAll(player.getPaddle(), bot.getPaddle());
 	}
+//	Player x = 20 y = 145
+//	Bot x = 460 y = 145
 }

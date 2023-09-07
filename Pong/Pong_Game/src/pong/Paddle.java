@@ -4,24 +4,39 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 public class Paddle {
-	double x;
-	double y;
+	Rectangle paddle;
+//	double x; // current x position of paddle
+//	double y; // current y position of paddle
 	Color colour;
 	
+	
 	Paddle(double x, double y, Color colour) {
-		this.x = x;
-		this.y = y;
-		this.colour = colour;
+		paddle = new Rectangle(15, 45, colour);
 		
-		createPaddles();
-	}
-
-	private void createPaddles() {
-		Rectangle paddle = new Rectangle(20,30);
+		paddle.setTranslateX(x);
+		paddle.setTranslateY(y);
 	}
 	
-	void updatePaddleLocation(double x, double y) {
-		
+	Rectangle getPaddle() {
+		return paddle;
+	}
+
+	
+	void updatePaddleLocation(double y) {
+		if(checkValidYPosition(y))
+			paddle.setTranslateY(y);
+	}
+	
+	boolean checkValidYPosition(double y) {
+		return (10 <= y && y <= 450) ? true : false;
+	}
+	
+	double getXCoords() {
+		return paddle.getTranslateX();
+	}
+	
+	double getYCoords() {
+		return paddle.getTranslateY();
 	}
 	
 	

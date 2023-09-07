@@ -3,13 +3,10 @@ package pong;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -44,18 +41,23 @@ public class Main extends Application {
 	// Creates and adds the collection of nodes to the rootPane
 	void menuScreen() {
 		
-		StackPane menu = createMenuScreen();
-		menu.setAlignment(Pos.CENTER);
+		Pane menu = createMenuScreen();
+		menu.setTranslateX(190);
+		menu.setTranslateY(150);
 		
 		rootPane.getChildren().add(menu);
 	}
 	
-	public StackPane createMenuScreen() {
-		Text title = createText("Pong", 15);
+	public Pane createMenuScreen() {
+		Text title = createText("Pong", 50);
+		title.setFont(Font.font("Arial", FontWeight.BOLD, 50));
 		
 		Button start = new Button("Start");
-		start.setFont(Font.font("Arial", FontWeight.MEDIUM, FontPosture.REGULAR, 12));
+		start.setFont(Font.font("Arial", FontWeight.MEDIUM, FontPosture.REGULAR, 30));
 		start.setTextFill(Color.WHITE);
+		start.setPrefHeight(50);
+		start.setPrefWidth(150);
+		start.setTranslateY(125);
 		// not show the button background
 		
 		start.setOnAction(new EventHandler<ActionEvent>() {
@@ -66,7 +68,7 @@ public class Main extends Application {
 			}
 		});
 		
-		return new StackPane(title,start);
+		return new Pane(title,start);
 	}
 	
 	
@@ -81,6 +83,7 @@ public class Main extends Application {
 		Text userScore = createText("0", 12);
 		Text botScore = createText("0", 12);
 		
+		// Change the x coordinates of labelPane, ScorePane, and scoreBoard
 		HBox labelPane = new HBox(15, userText, botText);
 		HBox scorePane = new HBox(25, userScore, botScore);
 		scoreBoard.getChildren().addAll(labelPane, scorePane);
@@ -105,9 +108,4 @@ public class Main extends Application {
 //	void difficulty() {
 //		
 //	}
-	
-	public void addchild(Node node) {
-		rootPane.getChildren().add(node);
-	}
-
 }
