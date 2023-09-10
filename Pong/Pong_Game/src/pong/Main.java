@@ -18,6 +18,7 @@ import javafx.stage.Stage;
 public class Main extends Application {
 	
 	Pane rootPane;
+	GameHandler game;
 
 	public static void main(String[] args) {
 		launch(args);
@@ -92,7 +93,13 @@ public class Main extends Application {
 		
 		rootPane.getChildren().add(gamePane);
 		
-		new GameHandler(rootPane);
+		game = new GameHandler(rootPane);
+		
+//		while(userScore.getText() != "3" || botScore.getText() != "3") {
+////			game.start();
+//		}
+		
+//		endScreen();
 	}
 	
 	// Returns a Text object with the given String and font size

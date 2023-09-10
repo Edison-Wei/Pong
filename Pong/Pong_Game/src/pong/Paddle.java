@@ -5,6 +5,7 @@ import javafx.scene.shape.Rectangle;
 
 public class Paddle {
 	Rectangle paddle;
+	// most likely do not need
 //	double x; // current x position of paddle
 //	double y; // current y position of paddle
 	Color colour;
@@ -22,20 +23,20 @@ public class Paddle {
 	}
 
 	
-	void updatePaddleLocation(double y) {
+	public void updatePaddleYLocation(double y) {
 		if(checkValidYPosition(y))
 			paddle.setTranslateY(y);
 	}
 	
 	boolean checkValidYPosition(double y) {
-		return (10 <= y && y <= 450) ? true : false;
+		return (0 <= y && y <= 455) ? true : false;
 	}
 	
-	double getXCoords() {
+	public double getXCoords() {
 		return paddle.getTranslateX();
 	}
 	
-	double getYCoords() {
+	public double getYCoords() {
 		return paddle.getTranslateY();
 	}
 	
