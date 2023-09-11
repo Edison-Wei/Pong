@@ -4,21 +4,23 @@ import javafx.event.EventHandler;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 
-public class GameHandler {
+public class GameHandler extends Thread {
 
 	Pane rootPane;
-	Paddle player;
-	Paddle bot;
+	Text[] score;
+	
+	Paddle player;	//	Player x = 20 y = 145
+	Paddle bot;		//	Bot x = 460 y = 145
 	Ball ball;
 	
-	// for async funtion
-//	Thread t1;	// Player movement
-//	Thread t2;	// Ball movement
-//	Thread t3;	// Bot movement - could combine with ball 
+	// will need one thread to handle the ball and bot movements
+//	Thread t1;	// Ball and Bot movement - will be started in Main class 
 	
-	GameHandler(Pane rootPane) {
+	GameHandler(Pane rootPane, Text[] score) {
 		this.rootPane = rootPane;
+		this.score = score;
 		player = new Paddle(20, 250, Color.BLUE);
 		bot = new Paddle(460, 250, Color.RED);
 		ball = new Ball();
@@ -35,10 +37,37 @@ public class GameHandler {
 		});
 	}
 	
-	void start() {
-		t1.s
-		while(20<= ball.getXCoords() && ball.getXCoords() <= 460);
+	public void run() {
+		while(score[0].getText() != "3" || score[1].getText() != "3") {
+			while(20<= ball.getXCoords() && ball.getXCoords() <= 460) {
+				ball.updateBall(ball.velocity+ball.getXCoords(), ball.getYCoords());
+				try {
+					wait(1000);
+				} catch (Exception e) {
+					e.printStackTrace();
+				} // Depends on difficultly - lower more difficult
+				
+//				y = nextYCoords();
+//				if(checkBallInBound()) // if the ball were to go out of bounds in the y direction switch
+				
+//				if(hitPlayerPaddle());
+//				if(hitBotPaddle());
+			}
+			
+			if(ball.getXCoords() > 460)
+				addOnePoint(score[0]);
+			else
+				addOnePoint(score[1]);
+		}
 	}
-//	Player x = 20 y = 145
-//	Bot x = 460 y = 145
+
+	void addOnePoint(Text current) {
+		int num = Integer.parseInt(current.getText()) + 1;
+		current.setText("" + num);
+	}
+	
+	boolean checkBallInBound() {
+		return (ball.getYCoords() <= 7.5 || ball.getYCoords() >= 492.5) ? true : false;
+	}
+
 }

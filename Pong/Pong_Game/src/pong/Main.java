@@ -81,23 +81,21 @@ public class Main extends Application {
 		
 		Text userText = createText("Player", 12);
 		Text botText = createText("Bot", 12);
-		Text userScore = createText("0", 12);
-		Text botScore = createText("0", 12);
+//		Text userScore = createText("0", 12);
+//		Text botScore = createText("0", 12);
+		Text[] score = {createText("0", 12), createText("0", 12)};
 		
 		// Change the x coordinates of labelPane, ScorePane, and scoreBoard
 		HBox labelPane = new HBox(15, userText, botText);
-		HBox scorePane = new HBox(25, userScore, botScore);
+		HBox scorePane = new HBox(25, score[0], score[1]);
 		scoreBoard.getChildren().addAll(labelPane, scorePane);
 		
 		Pane gamePane = new Pane(scoreBoard);
 		
 		rootPane.getChildren().add(gamePane);
 		
-		game = new GameHandler(rootPane);
-		
-//		while(userScore.getText() != "3" || botScore.getText() != "3") {
-////			game.start();
-//		}
+		game = new GameHandler(rootPane, score);
+		game.start();
 		
 //		endScreen();
 	}

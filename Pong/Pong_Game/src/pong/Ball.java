@@ -4,9 +4,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 public class Ball {
-	int x;
-	int y;
-	int velocity = 0;
+	double x;
+	double y;
+	double velocity = .5;
 	Circle ball;
 	
 	Ball() { 
@@ -27,6 +27,10 @@ public class Ball {
 	
 	double getXCoords() {
 		return ball.getTranslateX();
+	}
+	
+	double getYCoords() {
+		return ball.getTranslateY();	
 	}
 	
 	int sendToRandomDirection() {
