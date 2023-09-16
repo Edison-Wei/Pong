@@ -15,11 +15,7 @@ public class GameHandler extends Thread {
 	private Paddle bot;		//	Bot x = 460 y = 145
 	private Ball ball;
 	
-	final private int SLEEP_TIME = 10;
-	
-	GameHandler() {
-		
-	}
+	private int SLEEP_TIME = 5;
 	
 	GameHandler(Pane rootPane, Text[] score) {
 		this.rootPane = rootPane;

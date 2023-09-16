@@ -10,10 +10,8 @@ public class Ball {
 	private Circle ball;
 	
 	Ball() { 
-		// Create Ball and place in center of Pane
+		// Create Ball object and place in center of Pane
 		ball = new Circle(7.5, Color.WHITE);
-		ball.setTranslateX(250);
-		ball.setTranslateY(155);
 	}
 	
 	void updateBall(double x, double y) {
@@ -39,7 +37,15 @@ public class Ball {
 	
 	int sendToRandomDirection() {
 		// Find a way to send the ball in a random direction
+		// either use trig angles to calculate
+		// or calculate from 180 degrees and figure the x and y after
+		
+		
 		return 0;
 	}
 	
+	void resetBallLocation() {
+		ball.setTranslateX(250);
+		ball.setTranslateY(250);
+	}
 }

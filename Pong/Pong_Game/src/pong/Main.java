@@ -105,9 +105,9 @@ public class Main extends Application {
 	/***
 	 * Makes a Text object with .setFont style of
 	 * "Arial" , FontWeight.MEDIUM, FontPosture.REGULAR, and size being given
-	 * @param text a String of the given word
-	 * @param size a int with the size of the text
-	 * @return a Text object with customized style
+	 * @param text an String of the given word
+	 * @param size an int with the size of the text
+	 * @return an Text object with customized style
 	 */
 	Text createText(String text, int size) {
 		Text newText = new Text(text);
