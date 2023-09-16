@@ -4,11 +4,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
 public class Paddle {
-	Rectangle paddle;
+	private Rectangle paddle;
 	// most likely do not need
 //	double x; // current x position of paddle
 //	double y; // current y position of paddle
-	Color colour;
+	private Color colour;
 	
 	
 	Paddle(double x, double y, Color colour) {

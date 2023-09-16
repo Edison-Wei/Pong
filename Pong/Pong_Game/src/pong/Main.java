@@ -95,14 +95,22 @@ public class Main extends Application {
 		rootPane.getChildren().add(gamePane);
 		
 		game = new GameHandler(rootPane, score);
-		game.start();
+		Thread t1 = new Thread(game);
+		t1.start();
+		
 		
 //		endScreen();
 	}
 	
-	// Returns a Text object with the given String and font size
-	Text createText(String word, int size) {
-		Text newText = new Text(word);
+	/***
+	 * Makes a Text object with .setFont style of
+	 * "Arial" , FontWeight.MEDIUM, FontPosture.REGULAR, and size being given
+	 * @param text a String of the given word
+	 * @param size a int with the size of the text
+	 * @return a Text object with customized style
+	 */
+	Text createText(String text, int size) {
+		Text newText = new Text(text);
 		newText.setFont(Font.font("Arial", FontWeight.MEDIUM, FontPosture.REGULAR, size));
 		newText.setFill(Color.WHITE);
 		

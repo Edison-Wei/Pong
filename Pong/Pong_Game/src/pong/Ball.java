@@ -4,10 +4,10 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 public class Ball {
-	double x;
-	double y;
-	double velocity = .5;
-	Circle ball;
+	private double x;
+	private double y;
+	private double velocity = .5;
+	private Circle ball;
 	
 	Ball() { 
 		// Create Ball and place in center of Pane
@@ -31,6 +31,10 @@ public class Ball {
 	
 	double getYCoords() {
 		return ball.getTranslateY();	
+	}
+	
+	double getVelocity() {
+		return velocity;
 	}
 	
 	int sendToRandomDirection() {

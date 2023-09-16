@@ -8,15 +8,18 @@ import javafx.scene.text.Text;
 
 public class GameHandler extends Thread {
 
-	Pane rootPane;
-	Text[] score;
+	private Pane rootPane;
+	private Text[] score;
 	
-	Paddle player;	//	Player x = 20 y = 145
-	Paddle bot;		//	Bot x = 460 y = 145
-	Ball ball;
+	private Paddle player;	//	Player x = 20 y = 145
+	private Paddle bot;		//	Bot x = 460 y = 145
+	private Ball ball;
 	
-	// will need one thread to handle the ball and bot movements
-//	Thread t1;	// Ball and Bot movement - will be started in Main class 
+	final private int SLEEP_TIME = 10;
+	
+	GameHandler() {
+		
+	}
 	
 	GameHandler(Pane rootPane, Text[] score) {
 		this.rootPane = rootPane;
@@ -25,9 +28,9 @@ public class GameHandler extends Thread {
 		bot = new Paddle(460, 250, Color.RED);
 		ball = new Ball();
 		
-		rootPane.getChildren().addAll(player.getPaddle(), bot.getPaddle(), ball.getBall());
+		this.rootPane.getChildren().addAll(player.getPaddle(), bot.getPaddle(), ball.getBall());
 		
-		rootPane.setOnMouseMoved(new EventHandler<MouseEvent>() {
+		this.rootPane.setOnMouseMoved(new EventHandler<MouseEvent>() {
 
 			@Override
 			public void handle(MouseEvent mouse) {
@@ -40,18 +43,15 @@ public class GameHandler extends Thread {
 	public void run() {
 		while(score[0].getText() != "3" || score[1].getText() != "3") {
 			while(20<= ball.getXCoords() && ball.getXCoords() <= 460) {
-				ball.updateBall(ball.velocity+ball.getXCoords(), ball.getYCoords());
+				ball.updateBall(ball.getVelocity()+ball.getXCoords(), ball.getYCoords());
+				
 				try {
-					wait(1000);
+					Thread.sleep(SLEEP_TIME);
 				} catch (Exception e) {
+					// Create a ThreadException class 
+					// should extend Exception and be some message on screen that it broke
 					e.printStackTrace();
-				} // Depends on difficultly - lower more difficult
-				
-//				y = nextYCoords();
-//				if(checkBallInBound()) // if the ball were to go out of bounds in the y direction switch
-				
-//				if(hitPlayerPaddle());
-//				if(hitBotPaddle());
+				}
 			}
 			
 			if(ball.getXCoords() > 460)
