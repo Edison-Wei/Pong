@@ -12,6 +12,7 @@ public class Paddle {
 	
 	Paddle(double x, double y, Color colour) {
 		paddle = new Rectangle(15, 45, colour);
+
 		
 		paddle.setTranslateX(x);
 		paddle.setTranslateY(y);
