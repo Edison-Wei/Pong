@@ -63,6 +63,11 @@ public class Ball {
 	void setyVelocity(double yVelocity) {
 		this.yVelocity = yVelocity;
 	}
+	
+	void increaseVelocity(double increase) {
+		xVelocity = (xVelocity < 0) ? xVelocity+(increase*-1) : xVelocity+increase;
+		yVelocity = (yVelocity < 0) ? yVelocity+(increase*-1) : yVelocity+increase;
+	}
 
 	int sendToRandomDirection() {
 		// Find a way to send the ball in a random direction

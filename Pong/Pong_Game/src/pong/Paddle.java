@@ -37,9 +37,18 @@ public class Paddle {
 		return (0 <= y && y <= 455) ? true : false;
 	}
 	
+	/***
+	 * Get the Height of the paddle
+	 * @return an double of the height of the paddle 
+	 */
 	public double getHeight() {
 		return paddle.getTranslateX();
 	}
+	
+	/***
+	 * Get the Width of the paddle
+	 * @return an double of the width of the paddle 
+	 */
 	public double getWidth() {
 		return paddle.getTranslateX();
 	}
