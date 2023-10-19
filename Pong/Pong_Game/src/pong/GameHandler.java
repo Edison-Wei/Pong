@@ -20,7 +20,7 @@ public class GameHandler extends Thread {
 	private Ball ball;
 	
 	private int SLEEP_TIME_MILLISECONDS = 10;
-	private double VECLOCITYINCREASEBY = .2;
+	private double INCREASEBYVECLOCITY = .2;
 	
 	/**
 	 * Constructor to setup the game environment
@@ -50,7 +50,7 @@ public class GameHandler extends Thread {
 	}
 	
 	public void run() {
-		while(score[0].getText() != "3" || score[1].getText() != "3") {
+		while(bot.getScore() != 3 && player.getScore() != 3) { // Once finished show a game over screen
 			// Fix this broken math
 			while(!ballPassedBotPaddle(ball.getXCoords(), ball.getYCoords()) && !ballPassedPlayerPaddle(ball.getXCoords(), ball.getYCoords())) {
 				double newX = ball.getXCoords() + ball.getXVelocity();
@@ -69,12 +69,12 @@ public class GameHandler extends Thread {
 				// This checks if the next position of the ball is going to pass either paddles
 				if(player.getXCoords()+player.getWidth() >= newX || newX >= bot.getXCoords()) {
 					if(ballPassedBotPaddle(newX, newY))
-						addOnePoint(score[0]); // add a point to Bot score
+						addOnePoint(score[0]); // add a point to Player score
 					else if(ballPassedPlayerPaddle(newX, newY))
-						addOnePoint(score[1]); // add a point to Player score
+						addOnePoint(score[1]); // add a point to Bot score	
 					else if(!checkIfBallHitsAPaddle(newX, newY)) {
 						bounceOffPaddle();
-						ball.increaseVelocity(VECLOCITYINCREASEBY);
+						ball.increaseVelocity(INCREASEBYVECLOCITY);
 					}
 				}
 				
@@ -90,7 +90,6 @@ public class GameHandler extends Thread {
 					e.printStackTrace();
 				}
 			}
-			
 			// Once the ball has passed either paddle
 			// Cause the Thread to sleep for 5 seconds
 			// reset ball location to center
@@ -134,9 +133,14 @@ public class GameHandler extends Thread {
 	}
 
 	private void addOnePoint(Text current) {
-		int num = Integer.parseInt(current.getText());
-		num =+ 1;
-		current.setText("" + num);
+		if(ball.getXCoords() < 250) {
+			bot.increaseScore(); // could combine to one method
+			current.setText("" + bot.getScore());
+		}
+		else {
+			player.increaseScore(); // could combine to one method
+			current.setText("" + player.getScore());
+		}
 	}
 	
 	private boolean checkBallNextPositionInBounds(double newY) {

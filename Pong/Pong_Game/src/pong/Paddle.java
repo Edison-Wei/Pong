@@ -7,6 +7,7 @@ public class Paddle {
 	private Rectangle paddle;
 	private final int width = 15;
 	private final int height = 45;
+	private int score;
 	// most likely do not need
 //	double x; // current x position of paddle
 //	double y; // current y position of paddle
@@ -14,6 +15,7 @@ public class Paddle {
 	
 	Paddle(double x, double y, Color colour) {
 		paddle = new Rectangle(width, height, colour);
+		score = 0;
 		
 		paddle.setTranslateX(x);
 		paddle.setTranslateY(y);
@@ -67,5 +69,13 @@ public class Paddle {
 	 */
 	public double getYCoords() {
 		return paddle.getTranslateY();
+	}
+
+	public int getScore() {
+		return score;
+	}
+
+	public void increaseScore() {
+		score++;
 	}	
 }
