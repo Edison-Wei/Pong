@@ -52,6 +52,7 @@ public class GameHandler extends Thread {
 	public void run() {
 		while(bot.getScore() != 3 && player.getScore() != 3) { // Once finished show a game over screen
 			// Fix this broken math
+			ball.sendToRandomDirection();
 			while(!ballPassedBotPaddle(ball.getXCoords(), ball.getYCoords()) && !ballPassedPlayerPaddle(ball.getXCoords(), ball.getYCoords())) {
 				double newX = ball.getXCoords() + ball.getXVelocity();
 				double newY = ball.getYCoords() + ball.getYVelocity();
@@ -60,7 +61,7 @@ public class GameHandler extends Thread {
 				// if true switch the velocity to either positive or negative
 				if(checkBallNextPositionInBounds(newY)) {
 					bounceOffWall();
-					// this sets the ball right at the border so it does not clip any edges
+					// this sets the ball right at the border so clipping of edges occur
 					newY = (ball.getRadius() > newY) ? ball.getRadius() : 500-ball.getRadius();
 				}
 				
@@ -161,6 +162,8 @@ public class GameHandler extends Thread {
 	
 	private void updateBotLocation() {
 		bot.updatePaddleYLocation(ball.getYCoords() - 22.5);
+		// Take (430 - positionOfBallY)/yVelocity = numberOfSteps //maybe another way
+		
 	}
 	
 	private boolean resetBallLocation() {

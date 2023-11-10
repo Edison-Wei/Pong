@@ -69,13 +69,14 @@ public class Ball {
 		yVelocity = (yVelocity < 0) ? yVelocity+(increase*-1) : yVelocity+increase;
 	}
 
-	int sendToRandomDirection() {
+	void sendToRandomDirection() {
 		// Find a way to send the ball in a random direction
 		// either use trig angles to calculate
 		// or calculate from 180 degrees and figure the x and y after
-		
-		
-		return 0;
+		double theta = Math.random() * (Math.PI/4);
+		xVelocity = (xVelocity > 0 ) ? Math.cos(theta)*-1 : Math.cos(theta);
+		yVelocity = (Math.random() < 0.5) ? Math.sin(theta*-1) : Math.sin(theta); // Goes the opposite direction
+//		System.out.println("x = " + xVelocity + " y = " + yVelocity);
 	}
 	
 	void centerBallLocation() {
