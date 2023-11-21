@@ -4,8 +4,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 public class Ball {
-	private double x;
-	private double y;
+//	private double x;
+//	private double y;
 	private double xVelocity = -2.5;
 	private double yVelocity = .5;
 	private Circle ball;
