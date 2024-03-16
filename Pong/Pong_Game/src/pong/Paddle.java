@@ -11,8 +11,7 @@ public class Paddle {
 	// most likely do not need
 //	double x; // current x position of paddle
 //	double y; // current y position of paddle
-	
-	
+
 	Paddle(double x, double y, Color colour) {
 		paddle = new Rectangle(width, height, colour);
 		score = 0;
