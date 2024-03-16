@@ -5,14 +5,16 @@ import javafx.scene.shape.Rectangle;
 
 public class Paddle {
 	private Rectangle paddle;
+	private final int width = 15;
+	private final int height = 45;
+	private int score;
 	// most likely do not need
 //	double x; // current x position of paddle
 //	double y; // current y position of paddle
-	
-	
-	Paddle(double x, double y, Color colour) {
-		paddle = new Rectangle(15, 45, colour);
 
+	Paddle(double x, double y, Color colour) {
+		paddle = new Rectangle(width, height, colour);
+		score = 0;
 		
 		paddle.setTranslateX(x);
 		paddle.setTranslateY(y);
@@ -37,6 +39,22 @@ public class Paddle {
 	}
 	
 	/***
+	 * Get the Height of the paddle
+	 * @return an double of the height of the paddle 
+	 */
+	public double getHeight() {
+		return paddle.getTranslateX();
+	}
+	
+	/***
+	 * Get the Width of the paddle
+	 * @return an double of the width of the paddle 
+	 */
+	public double getWidth() {
+		return paddle.getTranslateX();
+	}
+	
+	/***
 	 * Get the X coordinate of the paddle
 	 * @return an double of the X position the paddle is at currently 
 	 */
@@ -50,5 +68,13 @@ public class Paddle {
 	 */
 	public double getYCoords() {
 		return paddle.getTranslateY();
+	}
+
+	public int getScore() {
+		return score;
+	}
+
+	public void increaseScore() {
+		score++;
 	}	
 }
