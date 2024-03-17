@@ -45,20 +45,46 @@ struct Sprite {
     uint8_t* data;
 };
 
+struct Alien {
+    size_t x, y;
+    uint8_t type;
+};
+
+struct Player {
+    size_t x, y;
+    size_t life;
+};
+
+struct Game {
+    size_t width, height;
+    size_t numAliens;
+    Alien* aliens;
+    Player player;
+};
+
+struct SpriteAnimation {
+    bool loop;
+    size_t numFrames;
+    size_t frameDuration;
+    size_t time;
+    Sprite** frames;
+};
+
+
 
 uint32_t rgbToUint32(uint8_t r, uint8_t g, uint8_t b) {
     return (r << 24) | (g << 16) | (b << 8) | 255;
 }
 
 void bufferClear(Buffer* buffer, uint32_t colour) {
-    for (size_t i = 0; i < buffer->width * buffer->height; i++) {
+    for(size_t i = 0; i < buffer->width * buffer->height; i++) {
         buffer->data[i] = colour;
     }
 }
 
-void bufferSpriteDraw(Buffer* buffer, const Sprite& sprite, size_t x, size_t y, uint32_t colour) {
-    for (size_t xi = 0; xi < sprite.width; xi++) {
-        for (size_t yi = 0; yi < sprite.height; yi++) {
+void bufferDrawSprite(Buffer* buffer, const Sprite& sprite, size_t x, size_t y, uint32_t colour) {
+    for(size_t xi = 0; xi < sprite.width; xi++) {
+        for(size_t yi = 0; yi < sprite.height; yi++) {
             size_t sy = sprite.height - 1 + y - yi;
             size_t sx = x + xi;
             if (sprite.data[yi * sprite.width + xi] && sy < buffer->height && sx < buffer->width) {
@@ -69,8 +95,7 @@ void bufferSpriteDraw(Buffer* buffer, const Sprite& sprite, size_t x, size_t y, 
 }
 
 
-int main()
-{
+int main() {
     const size_t buffer_width = 224;
     const size_t buffer_height = 256;
 
@@ -105,6 +130,8 @@ int main()
     glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
 
     printf("Using OpenGL: %d.%d\n", glVersion[0], glVersion[1]);
+
+    glfwSwapInterval(1);
 
     glClearColor(1.0, 0.0, 0.0, 1.0);
 
@@ -162,10 +189,10 @@ int main()
     glGenVertexArrays(1, &fullscreenTriangleVao);
     glBindVertexArray(fullscreenTriangleVao);
 
-    // To create into the program for GPU useage
+    // To create into the program forGPU useage
     GLuint shaderID = glCreateProgram();
     
-    // For creation of vertex shader
+    // Forcreation of vertex shader
     {
         GLuint shaderVP = glCreateShader(GL_VERTEX_SHADER);
 
@@ -177,7 +204,7 @@ int main()
         glDeleteShader(shaderVP);
     }
 
-    // For creation of fragment shader
+    // Forcreation of fragment shader
     {
         GLuint shaderFP = glCreateShader(GL_FRAGMENT_SHADER);
 
@@ -210,10 +237,12 @@ int main()
 
     glBindVertexArray(fullscreenTriangleVao);
 
-    Sprite alienSprite;
-    alienSprite.width = 11;
-    alienSprite.height = 8;
-    alienSprite.data = new uint8_t[88] {
+    // Create Alien and Player sprites encoded as a bitmap
+    Sprite alienSprite0;
+    alienSprite0.width = 11;
+    alienSprite0.height = 8;
+    alienSprite0.data = new uint8_t[88]
+    {
         0,0,1,0,0,0,0,0,1,0,0, // ..@.....@..
         0,0,0,1,0,0,0,1,0,0,0, // ...@...@...
         0,0,1,1,1,1,1,1,1,0,0, // ..@@@@@@@..
@@ -224,13 +253,87 @@ int main()
         0,0,0,1,1,0,1,1,0,0,0  // ...@@.@@...
     };
 
+    Sprite alienSprite1;
+    alienSprite1.width = 11;
+    alienSprite1.height = 8;
+    alienSprite1.data = new uint8_t[88]
+    {
+        0,0,1,0,0,0,0,0,1,0,0, // ..@.....@..
+        1,0,0,1,0,0,0,1,0,0,1, // @..@...@..@
+        1,0,1,1,1,1,1,1,1,0,1, // @.@@@@@@@.@
+        1,1,1,0,1,1,1,0,1,1,1, // @@@.@@@.@@@
+        1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@
+        0,1,1,1,1,1,1,1,1,1,0, // .@@@@@@@@@.
+        0,0,1,0,0,0,0,0,1,0,0, // ..@.....@..
+        0,1,0,0,0,0,0,0,0,1,0  // .@.......@.
+    };
+
+    Sprite playerSprite;
+    playerSprite.width = 11;
+    playerSprite.height = 7;
+    playerSprite.data = new uint8_t[77]
+    {
+        0,0,0,0,0,1,0,0,0,0,0, // .....@.....
+        0,0,0,0,1,1,1,0,0,0,0, // ....@@@....
+        0,0,0,0,1,1,1,0,0,0,0, // ....@@@....
+        0,1,1,1,1,1,1,1,1,1,0, // .@@@@@@@@@.
+        1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@
+        1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@
+        1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@
+    };
+
+    SpriteAnimation* alienAnimation = new SpriteAnimation;
+    alienAnimation->loop = true;
+    alienAnimation->numFrames = 2;
+    alienAnimation->frameDuration = 10;
+    alienAnimation->time = 0;
+
+    alienAnimation->frames = new Sprite*[2];
+    alienAnimation->frames[0] = &alienSprite0;
+    alienAnimation->frames[1] = &alienSprite1;
+
+    Game game;
+    game.width = buffer_width;
+    game.height = buffer_height;
+    game.numAliens = 55;
+    game.aliens = new Alien[game.numAliens];
+
+    game.player.x = 112 - 5;
+    game.player.y = 32;
+    game.player.life = 3;
+
+    for(size_t yi = 0; yi < 5; yi++) {
+        for(size_t xi = 0; xi < 11; xi++) {
+            game.aliens[yi * 11 + xi].x = 16 * xi + 20;
+            game.aliens[yi * 11 + xi].y = 17 * yi + 128;
+        }
+    }
+    
+
     uint32_t clearColour = rgbToUint32(0, 128, 0);
+    int playerMoveDirection = 1;
 
     while(!glfwWindowShouldClose(window)) {
-        glClear(GL_COLOR_BUFFER_BIT);
-        // bufferClear(&buffer, clearColour);
+        bufferClear(&buffer, clearColour);
 
-        bufferSpriteDraw(&buffer, alienSprite, 112, 128, rgbToUint32(128, 0, 0));
+        for(size_t ai = 0; ai < game.numAliens; ai++) {
+            const Alien& alien = game.aliens[ai];
+            size_t currentFrame = alienAnimation->time / alienAnimation->frameDuration;
+            const Sprite& sprite = *alienAnimation->frames[currentFrame];
+            bufferDrawSprite(&buffer, sprite, alien.x, alien.y, rgbToUint32(128, 0, 0));
+        }
+        bufferDrawSprite(&buffer, playerSprite, game.player.x, game.player.y, rgbToUint32(128, 0, 0));
+
+        // Update Animations
+        alienAnimation->time++;
+        if(alienAnimation->time == alienAnimation->numFrames * alienAnimation->frameDuration) {
+            if(alienAnimation->loop)
+                alienAnimation->time = 0;
+            else {
+                delete alienAnimation;
+                alienAnimation = nullptr;
+            }
+        }
 
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
                         buffer.width, buffer.height,
@@ -240,14 +343,34 @@ int main()
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         glfwSwapBuffers(window);
+
+        if(game.player.x + playerSprite.width + playerMoveDirection >= game.width - 1) {
+            game.player.x = game.width - playerSprite.width - playerMoveDirection - 1;
+            playerMoveDirection *= -1;
+        }
+        else if ((int)game.player.x + playerMoveDirection <= 0) {
+            game.player.x = 0;
+            playerMoveDirection *= -1;
+        }
+        else
+            game.player.x += playerMoveDirection;
+        
+
         glfwPollEvents();
     }
 
     glfwDestroyWindow(window);
     glfwTerminate();
 
-    delete[] alienSprite.data;
+    glDeleteVertexArrays(1, &fullscreenTriangleVao);
+
+    delete[] alienSprite0.data;
+    delete[] alienSprite1.data;
+    delete[] alienAnimation->frames;
+    delete alienAnimation;
+
     delete[] buffer.data;
+    delete[] game.aliens;
     
     return 0;
 }
