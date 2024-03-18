@@ -5,6 +5,12 @@
 // g++ -c main.cpp -I/opt/homebrew/Cellar/glfw/3.4/include -Iglew-2.2.0/include
 // g++ main.o -o main.exe -L/opt/homebrew/Cellar/glfw/3.4/lib -Lglew-2.2.0/lib -lglfw -lglew -framework OpenGL 
 
+#define GAME_MAX_PROJECTILES 128
+
+bool gameRunning = false; // Check to see if the ESC keys is pressed or the lives is at 0
+int moveDirection = 0; // Direction of player movement (-1 for left, 1 for right);
+bool firePressed = false;
+
 void error_callback(int error, const char *description) {
     fprintf(stderr, "Error: %s\n", description);
 }
@@ -35,6 +41,33 @@ bool validateProgram(GLuint program) {
     return true;
 }
 
+void keyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    switch (key) {
+    case GLFW_KEY_ESCAPE:
+        if(action == GLFW_PRESS)
+            gameRunning = false;
+        break;
+    case GLFW_KEY_RIGHT:
+        if(action == GLFW_PRESS)
+            moveDirection += 1;
+        else if(action == GLFW_RELEASE)
+            moveDirection -= 1;
+        break;
+    case GLFW_KEY_LEFT:
+        if(action == GLFW_PRESS)
+            moveDirection -= 1;
+        else if(action == GLFW_RELEASE)
+            moveDirection += 1;
+        break;
+    case GLFW_KEY_SPACE:
+        if(action == GLFW_RELEASE)
+            firePressed = true;
+        break;
+    default:
+        break;
+    }
+}
+
 struct Buffer {
     size_t width, height;
     uint32_t* data;
@@ -55,11 +88,18 @@ struct Player {
     size_t life;
 };
 
+struct Projectile {
+    size_t x, y;
+    int direction; // Towards aliens (+), Towards player (-)
+};
+
 struct Game {
     size_t width, height;
     size_t numAliens;
+    size_t numProjectiles;
     Alien* aliens;
     Player player;
+    Projectile projectiles[GAME_MAX_PROJECTILES];
 };
 
 struct SpriteAnimation {
@@ -69,8 +109,6 @@ struct SpriteAnimation {
     size_t time;
     Sprite** frames;
 };
-
-
 
 uint32_t rgbToUint32(uint8_t r, uint8_t g, uint8_t b) {
     return (r << 24) | (g << 16) | (b << 8) | 255;
@@ -100,7 +138,6 @@ int main() {
     const size_t buffer_height = 256;
 
     glfwSetErrorCallback(error_callback);
-    GLFWwindow *window;
 
     if (!glfwInit()) {
         return -1;
@@ -111,11 +148,13 @@ int main() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-    window = glfwCreateWindow(640, 480, "Space Invaders", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(640, 480, "Space Invaders", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return -1;
     }
+
+    glfwSetKeyCallback(window, keyCallBack);
 
     glfwMakeContextCurrent(window);
 
@@ -282,6 +321,16 @@ int main() {
         1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@
     };
 
+    Sprite projectileSprite;
+    projectileSprite.width = 1;
+    projectileSprite.height = 3;
+    projectileSprite.data = new uint8_t[3]
+    {
+        1, // @
+        1, // @
+        1  // @
+    };
+
     SpriteAnimation* alienAnimation = new SpriteAnimation;
     alienAnimation->loop = true;
     alienAnimation->numFrames = 2;
@@ -297,6 +346,7 @@ int main() {
     game.height = buffer_height;
     game.numAliens = 55;
     game.aliens = new Alien[game.numAliens];
+    game.numProjectiles = 0;
 
     game.player.x = 112 - 5;
     game.player.y = 32;
@@ -312,16 +362,27 @@ int main() {
 
     uint32_t clearColour = rgbToUint32(0, 128, 0);
     int playerMoveDirection = 1;
+    gameRunning = true;
 
-    while(!glfwWindowShouldClose(window)) {
+    while(!glfwWindowShouldClose(window) && gameRunning) {
         bufferClear(&buffer, clearColour);
 
+        // Draw Alien Sprites
         for(size_t ai = 0; ai < game.numAliens; ai++) {
             const Alien& alien = game.aliens[ai];
             size_t currentFrame = alienAnimation->time / alienAnimation->frameDuration;
             const Sprite& sprite = *alienAnimation->frames[currentFrame];
             bufferDrawSprite(&buffer, sprite, alien.x, alien.y, rgbToUint32(128, 0, 0));
         }
+
+        // Draw Projectile Sprite
+        for (size_t bi = 0; bi < game.numProjectiles; bi++) {
+            const Projectile& projectile = game.projectiles[bi];
+            const Sprite& sprite = projectileSprite;
+            bufferDrawSprite(&buffer, sprite, projectile.x, projectile.y, rgbToUint32(128, 0, 0));
+        }
+        
+        // Draw Player Sprite
         bufferDrawSprite(&buffer, playerSprite, game.player.x, game.player.y, rgbToUint32(128, 0, 0));
 
         // Update Animations
@@ -344,17 +405,38 @@ int main() {
 
         glfwSwapBuffers(window);
 
-        if(game.player.x + playerSprite.width + playerMoveDirection >= game.width - 1) {
-            game.player.x = game.width - playerSprite.width - playerMoveDirection - 1;
-            playerMoveDirection *= -1;
+        for (size_t bi = 0; bi < game.numProjectiles;)
+        {
+            game.projectiles[bi].y += game.projectiles[bi].direction;
+            if(game.projectiles[bi].y >= game.height || game.projectiles[bi].y < projectileSprite.height) {
+                game.projectiles[bi] = game.projectiles[game.numProjectiles - 1];
+                game.numProjectiles--;
+                continue;
+            }
+            bi++;
         }
-        else if ((int)game.player.x + playerMoveDirection <= 0) {
-            game.player.x = 0;
-            playerMoveDirection *= -1;
-        }
-        else
-            game.player.x += playerMoveDirection;
         
+
+        // Player Movement
+        playerMoveDirection = 2 * moveDirection;
+        if(playerMoveDirection != 0) {
+            if(game.player.x + playerSprite.width + playerMoveDirection >= game.width) {
+                game.player.x = game.width - playerSprite.width;
+            }
+            else if ((int)game.player.x + playerMoveDirection <= 0) {
+                game.player.x = 0;
+            }
+            else
+                game.player.x += playerMoveDirection;
+        }
+
+        if(firePressed && game.numProjectiles < GAME_MAX_PROJECTILES) {
+            game.projectiles[game.numProjectiles].x = game.player.x + playerSprite.width / 2;
+            game.projectiles[game.numProjectiles].y = game.player.y + playerSprite.height;
+            game.projectiles[game.numProjectiles].direction = 2;
+            game.numProjectiles++;
+        }
+        firePressed = false;
 
         glfwPollEvents();
     }
