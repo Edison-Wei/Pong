@@ -1,9 +1,17 @@
-#include <cstdio>
-#include <cstdint>
+#include "Include.h"
+#include "Alien.h"
+#include "alienSprites.h"
+#include "Buffer.h"
+#include "Player.h"
+#include "Projectile.h"
+#include "Sprite.h"
+#include "SpriteAnimation.h"
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 // g++ -c main.cpp -I/opt/homebrew/Cellar/glfw/3.4/include -Iglew-2.2.0/include
 // g++ main.o -o main.exe -L/opt/homebrew/Cellar/glfw/3.4/lib -Lglew-2.2.0/lib -lglfw -lglew -framework OpenGL 
+
 
 #define GAME_MAX_PROJECTILES 128
 
@@ -68,31 +76,6 @@ void keyCallBack(GLFWwindow* window, int key, int scancode, int action, int mods
     }
 }
 
-struct Buffer {
-    size_t width, height;
-    uint32_t* data;
-};
-
-struct Sprite {
-    size_t width, height;
-    uint8_t* data;
-};
-
-struct Alien {
-    size_t x, y;
-    uint8_t type;
-};
-
-struct Player {
-    size_t x, y;
-    size_t life;
-};
-
-struct Projectile {
-    size_t x, y;
-    int direction; // Towards aliens (+), Towards player (-)
-};
-
 enum AlienType: uint8_t {
     ALIEN_DEAD   = 0,
     ALIEN_TYPE_A = 1,
@@ -107,14 +90,6 @@ struct Game {
     Alien* aliens;
     Player player;
     Projectile projectiles[GAME_MAX_PROJECTILES];
-};
-
-struct SpriteAnimation {
-    bool loop;
-    size_t numFrames;
-    size_t frameDuration;
-    size_t time;
-    Sprite** frames;
 };
 
 uint32_t rgbToUint32(uint8_t r, uint8_t g, uint8_t b) {
@@ -145,6 +120,39 @@ bool spriteOverLapCheck(const Sprite& spriteA, const Sprite& spriteB, size_t xA,
     return false;
 }
 
+void bufferDrawText(Buffer* buffer, const Sprite& textSpriteSheet, const char* text, size_t x, size_t y, uint32_t colour) {
+    // size_t xp = x;
+    size_t stride = textSpriteSheet.width * textSpriteSheet.height;
+    Sprite sprite = textSpriteSheet;
+    for (const char*  charbit = text; *charbit != '\0'; charbit++) {
+        char character = *charbit - 32;
+        if(character < 0 || character >= 65)
+            continue;
+        
+        sprite.data = textSpriteSheet.data + character * stride;
+        bufferDrawSprite(buffer, sprite, x, y, colour);
+        x += sprite.width + 1;
+    }
+}
+
+void bufferDrawNumber(Buffer* buffer, const Sprite& numberSpriteSheet, size_t number, size_t x, size_t y, uint32_t colour) {
+    uint8_t digits[64];
+    size_t numDigits = 0;
+    do {
+        digits[numDigits++] = number % 10;
+        number = number / 10;
+    } while (number > 0);
+
+    size_t stride = numberSpriteSheet.width * numberSpriteSheet.height;
+    Sprite sprite = numberSpriteSheet;
+    for (size_t i = 0; i < numDigits; i++)
+    {
+        uint8_t digit = digits[numDigits - i - 1];
+        sprite.data = numberSpriteSheet.data + digit * stride;
+        bufferDrawSprite(buffer, sprite, x, y, colour);
+        x += sprite.width + 1;
+    }
+}
 
 int main() {
     const size_t buffer_width = 224;
@@ -406,6 +414,85 @@ int main() {
         1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@
     };
 
+    Sprite textSpriteSheet;
+    textSpriteSheet.width = 5;
+    textSpriteSheet.height = 7;
+    textSpriteSheet.data = new uint8_t[65 * 35]
+    {
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,
+        0,1,0,1,0,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,1,0,1,0,0,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,0,0,1,0,1,0,
+        0,0,1,0,0,0,1,1,1,0,1,0,1,0,0,0,1,1,1,0,0,0,1,0,1,0,1,1,1,0,0,0,1,0,0,
+        1,1,0,1,0,1,1,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,0,1,1,0,1,0,1,1,
+        0,1,1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,1,0,0,1,0,0,1,0,1,0,0,0,1,0,1,1,1,1,
+        0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,
+        1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,
+        0,0,1,0,0,1,0,1,0,1,0,1,1,1,0,0,0,1,0,0,0,1,1,1,0,1,0,1,0,1,0,0,1,0,0,
+        0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,1,1,1,1,1,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,
+        0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,
+
+        0,1,1,1,0,1,0,0,0,1,1,0,0,1,1,1,0,1,0,1,1,1,0,0,1,1,0,0,0,1,0,1,1,1,0,
+        0,0,1,0,0,0,1,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,1,1,0,
+        0,1,1,1,0,1,0,0,0,1,0,0,0,0,1,0,0,1,1,0,0,1,0,0,0,1,0,0,0,0,1,1,1,1,1,
+        1,1,1,1,1,0,0,0,0,1,0,0,0,1,0,0,0,1,1,0,0,0,0,0,1,1,0,0,0,1,0,1,1,1,0,
+        0,0,0,1,0,0,0,1,1,0,0,1,0,1,0,1,0,0,1,0,1,1,1,1,1,0,0,0,1,0,0,0,0,1,0,
+        1,1,1,1,1,1,0,0,0,0,1,1,1,1,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,1,0,1,1,1,0,
+        0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,1,1,1,1,0,1,0,0,0,1,1,0,0,0,1,0,1,1,1,0,
+        1,1,1,1,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,
+        0,1,1,1,0,1,0,0,0,1,1,0,0,0,1,0,1,1,1,0,1,0,0,0,1,1,0,0,0,1,0,1,1,1,0,
+        0,1,1,1,0,1,0,0,0,1,1,0,0,0,1,0,1,1,1,1,0,0,0,0,1,1,0,0,0,1,0,1,1,1,0,
+
+        0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,0,0,
+        0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,
+        0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,
+        1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,
+        0,1,1,1,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,
+        0,1,1,1,0,1,0,0,0,1,1,0,1,0,1,1,1,0,1,1,1,0,1,0,0,1,0,0,0,1,0,1,1,1,0,
+
+        0,0,1,0,0,0,1,0,1,0,1,0,0,0,1,1,0,0,0,1,1,1,1,1,1,1,0,0,0,1,1,0,0,0,1,
+        1,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,1,1,1,0,
+        0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,0,1,1,1,0,
+        1,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,1,1,1,0,
+        1,1,1,1,1,1,0,0,0,0,1,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,1,1,1,1,1,
+        1,1,1,1,1,1,0,0,0,0,1,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,
+        0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,1,0,1,1,1,1,0,0,0,1,1,0,0,0,1,0,1,1,1,0,
+        1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,1,1,1,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,
+        0,1,1,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,1,1,1,0,
+        0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,1,0,0,0,1,0,1,1,1,0,
+        1,0,0,0,1,1,0,0,1,0,1,0,1,0,0,1,1,0,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0,0,1,
+        1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,1,1,1,1,
+        1,0,0,0,1,1,1,0,1,1,1,0,1,0,1,1,0,1,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,
+        1,0,0,0,1,1,0,0,0,1,1,1,0,0,1,1,0,1,0,1,1,0,0,1,1,1,0,0,0,1,1,0,0,0,1,
+        0,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,0,1,1,1,0,
+        1,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,
+        0,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,1,0,1,1,0,0,1,1,0,1,1,1,1,
+        1,1,1,1,0,1,0,0,0,1,1,0,0,0,1,1,1,1,1,0,1,0,1,0,0,1,0,0,1,0,1,0,0,0,1,
+        0,1,1,1,0,1,0,0,0,1,1,0,0,0,0,0,1,1,1,0,1,0,0,0,1,0,0,0,0,1,0,1,1,1,0,
+        1,1,1,1,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,
+        1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,0,1,1,1,0,
+        1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,0,1,0,1,0,0,0,1,0,0,
+        1,0,0,0,1,1,0,0,0,1,1,0,0,0,1,1,0,1,0,1,1,0,1,0,1,1,1,0,1,1,1,0,0,0,1,
+        1,0,0,0,1,1,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,1,0,1,0,1,0,0,0,1,1,0,0,0,1,
+        1,0,0,0,1,1,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,
+        1,1,1,1,1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1,1,1,1,1,
+
+        0,0,0,1,1,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,1,1,
+        0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0,
+        1,1,0,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1,0,0,1,1,0,0,0,
+        0,0,1,0,0,0,1,0,1,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,
+        0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    };
+
+    Sprite numberSpriteSheet = textSpriteSheet;
+    numberSpriteSheet.data += 16 * 35;
+
     Sprite projectileSprite;
     projectileSprite.width = 1;
     projectileSprite.height = 3;
@@ -458,6 +545,7 @@ int main() {
         deathCounters[i] = 10;
     }
     
+    size_t score = 0;
 
     uint32_t clearColour = rgbToUint32(0, 128, 0);
     int playerMoveDirection = 0;
@@ -465,6 +553,11 @@ int main() {
 
     while(!glfwWindowShouldClose(window) && gameRunning) {
         bufferClear(&buffer, clearColour);
+
+        // Draw Score board
+        bufferDrawText(&buffer, textSpriteSheet, "SCORE", 4, game.height - textSpriteSheet.height - 7, rgbToUint32(128, 0, 0));
+
+        bufferDrawNumber(&buffer, numberSpriteSheet, score, 4 + 2 * numberSpriteSheet.width, game.height - 2 * numberSpriteSheet.height - 12, rgbToUint32(128, 0, 0));
 
         // Draw Alien Sprites
         for(size_t ai = 0; ai < game.numAliens; ai++) {
@@ -537,6 +630,7 @@ int main() {
                 const Sprite& alienSprite = *animation.frames[currentFrame];
                 bool overlap = spriteOverLapCheck(projectileSprite, alienSprite, game.projectiles[bi].x, game.projectiles[bi].y, alien.x, alien.y);
                 if(overlap) {
+                    score += 5 * (4 - game.aliens[ai].type);
                     game.aliens[ai].type = ALIEN_DEAD;
 
                     game.aliens[ai].x -= (alienDeathSprite.width - alienSprite.width)/2;
