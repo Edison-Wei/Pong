@@ -93,6 +93,13 @@ struct Projectile {
     int direction; // Towards aliens (+), Towards player (-)
 };
 
+enum AlienType: uint8_t {
+    ALIEN_DEAD   = 0,
+    ALIEN_TYPE_A = 1,
+    ALIEN_TYPE_B = 2,
+    ALIEN_TYPE_C = 3
+};
+
 struct Game {
     size_t width, height;
     size_t numAliens;
@@ -132,6 +139,12 @@ void bufferDrawSprite(Buffer* buffer, const Sprite& sprite, size_t x, size_t y, 
     }
 }
 
+bool spriteOverLapCheck(const Sprite& spriteA, const Sprite& spriteB, size_t xA, size_t yA, size_t xB, size_t yB) {
+    if(xA < xB + spriteB.width && xA + spriteA.width > xB && yA < yB + spriteB.height && yA + spriteA.height > yB)
+        return true;
+    return false;
+}
+
 
 int main() {
     const size_t buffer_width = 224;
@@ -161,6 +174,7 @@ int main() {
     GLenum err = glewInit();
     if(err != GLEW_OK) {
         fprintf(stderr, "Error initializing GLEW.\n");
+        glfwTerminate();
         return -1;
     }
 
@@ -169,6 +183,7 @@ int main() {
     glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
 
     printf("Using OpenGL: %d.%d\n", glVersion[0], glVersion[1]);
+    printf("Renderer used: %s\n", glGetString(GL_RENDERER));
 
     glfwSwapInterval(1);
 
@@ -231,7 +246,7 @@ int main() {
     // To create into the program forGPU useage
     GLuint shaderID = glCreateProgram();
     
-    // Forcreation of vertex shader
+    // For creation of vertex shader
     {
         GLuint shaderVP = glCreateShader(GL_VERTEX_SHADER);
 
@@ -243,7 +258,7 @@ int main() {
         glDeleteShader(shaderVP);
     }
 
-    // Forcreation of fragment shader
+    // For creation of fragment shader
     {
         GLuint shaderFP = glCreateShader(GL_FRAGMENT_SHADER);
 
@@ -277,10 +292,38 @@ int main() {
     glBindVertexArray(fullscreenTriangleVao);
 
     // Create Alien and Player sprites encoded as a bitmap
-    Sprite alienSprite0;
-    alienSprite0.width = 11;
-    alienSprite0.height = 8;
-    alienSprite0.data = new uint8_t[88]
+    Sprite alienSprites[6];
+    alienSprites[0].width = 8;
+    alienSprites[0].height = 8;
+    alienSprites[0].data = new uint8_t[64]
+    {
+        0,0,0,1,1,0,0,0, // ...@@...
+        0,0,1,1,1,1,0,0, // ..@@@@..
+        0,1,1,1,1,1,1,0, // .@@@@@@.
+        1,1,0,1,1,0,1,1, // @@.@@.@@
+        1,1,1,1,1,1,1,1, // @@@@@@@@
+        0,1,0,1,1,0,1,0, // .@.@@.@.
+        1,0,0,0,0,0,0,1, // @......@
+        0,1,0,0,0,0,1,0  // .@....@.
+    };
+
+    alienSprites[1].width = 8;
+    alienSprites[1].height = 8;
+    alienSprites[1].data = new uint8_t[64]
+    {
+        0,0,0,1,1,0,0,0, // ...@@...
+        0,0,1,1,1,1,0,0, // ..@@@@..
+        0,1,1,1,1,1,1,0, // .@@@@@@.
+        1,1,0,1,1,0,1,1, // @@.@@.@@
+        1,1,1,1,1,1,1,1, // @@@@@@@@
+        0,0,1,0,0,1,0,0, // ..@..@..
+        0,1,0,1,1,0,1,0, // .@.@@.@.
+        1,0,1,0,0,1,0,1  // @.@..@.@
+    };
+
+    alienSprites[2].width = 11;
+    alienSprites[2].height = 8;
+    alienSprites[2].data = new uint8_t[88]
     {
         0,0,1,0,0,0,0,0,1,0,0, // ..@.....@..
         0,0,0,1,0,0,0,1,0,0,0, // ...@...@...
@@ -292,10 +335,9 @@ int main() {
         0,0,0,1,1,0,1,1,0,0,0  // ...@@.@@...
     };
 
-    Sprite alienSprite1;
-    alienSprite1.width = 11;
-    alienSprite1.height = 8;
-    alienSprite1.data = new uint8_t[88]
+    alienSprites[3].width = 11;
+    alienSprites[3].height = 8;
+    alienSprites[3].data = new uint8_t[88]
     {
         0,0,1,0,0,0,0,0,1,0,0, // ..@.....@..
         1,0,0,1,0,0,0,1,0,0,1, // @..@...@..@
@@ -305,6 +347,49 @@ int main() {
         0,1,1,1,1,1,1,1,1,1,0, // .@@@@@@@@@.
         0,0,1,0,0,0,0,0,1,0,0, // ..@.....@..
         0,1,0,0,0,0,0,0,0,1,0  // .@.......@.
+    };
+
+    alienSprites[4].width = 12;
+    alienSprites[4].height = 8;
+    alienSprites[4].data = new uint8_t[96]
+    {
+        0,0,0,0,1,1,1,1,0,0,0,0, // ....@@@@....
+        0,1,1,1,1,1,1,1,1,1,1,0, // .@@@@@@@@@@.
+        1,1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@@
+        1,1,1,0,0,1,1,0,0,1,1,1, // @@@..@@..@@@
+        1,1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@@
+        0,0,0,1,1,0,0,1,1,0,0,0, // ...@@..@@...
+        0,0,1,1,0,1,1,0,1,1,0,0, // ..@@.@@.@@..
+        1,1,0,0,0,0,0,0,0,0,1,1  // @@........@@
+    };
+
+
+    alienSprites[5].width = 12;
+    alienSprites[5].height = 8;
+    alienSprites[5].data = new uint8_t[96]
+    {
+        0,0,0,0,1,1,1,1,0,0,0,0, // ....@@@@....
+        0,1,1,1,1,1,1,1,1,1,1,0, // .@@@@@@@@@@.
+        1,1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@@
+        1,1,1,0,0,1,1,0,0,1,1,1, // @@@..@@..@@@
+        1,1,1,1,1,1,1,1,1,1,1,1, // @@@@@@@@@@@@
+        0,0,1,1,1,0,0,1,1,1,0,0, // ..@@@..@@@..
+        0,1,1,0,0,1,1,0,0,1,1,0, // .@@..@@..@@.
+        0,0,1,1,0,0,0,0,1,1,0,0  // ..@@....@@..
+    };
+
+    Sprite alienDeathSprite;
+    alienDeathSprite.width = 13;
+    alienDeathSprite.height = 7;
+    alienDeathSprite.data = new uint8_t[91]
+    {
+        0,1,0,0,1,0,0,0,1,0,0,1,0, // .@..@...@..@.
+        0,0,1,0,0,1,0,1,0,0,1,0,0, // ..@..@.@..@..
+        0,0,0,1,0,0,0,0,0,1,0,0,0, // ...@.....@...
+        1,1,0,0,0,0,0,0,0,0,0,1,1, // @@.........@@
+        0,0,0,1,0,0,0,0,0,1,0,0,0, // ...@.....@...
+        0,0,1,0,0,1,0,1,0,0,1,0,0, // ..@..@.@..@..
+        0,1,0,0,1,0,0,0,1,0,0,1,0  // .@..@...@..@.
     };
 
     Sprite playerSprite;
@@ -331,15 +416,20 @@ int main() {
         1  // @
     };
 
-    SpriteAnimation* alienAnimation = new SpriteAnimation;
-    alienAnimation->loop = true;
-    alienAnimation->numFrames = 2;
-    alienAnimation->frameDuration = 10;
-    alienAnimation->time = 0;
 
-    alienAnimation->frames = new Sprite*[2];
-    alienAnimation->frames[0] = &alienSprite0;
-    alienAnimation->frames[1] = &alienSprite1;
+    SpriteAnimation alienAnimation[3];
+
+    for(size_t i = 0; i < 3; ++i)
+    {
+        alienAnimation[i].loop = true;
+        alienAnimation[i].numFrames = 2;
+        alienAnimation[i].frameDuration = 10;
+        alienAnimation[i].time = 0;
+
+        alienAnimation[i].frames = new Sprite*[2];
+        alienAnimation[i].frames[0] = &alienSprites[2 * i];
+        alienAnimation[i].frames[1] = &alienSprites[2 * i + 1];
+    }
 
     Game game;
     game.width = buffer_width;
@@ -354,14 +444,23 @@ int main() {
 
     for(size_t yi = 0; yi < 5; yi++) {
         for(size_t xi = 0; xi < 11; xi++) {
-            game.aliens[yi * 11 + xi].x = 16 * xi + 20;
-            game.aliens[yi * 11 + xi].y = 17 * yi + 128;
+            Alien& alien = game.aliens[yi * 11 + xi];
+            alien.type = (5 - yi) / 2 + 1;
+            const Sprite& sprite = alienSprites[2 * (alien.type - 1)];
+
+            alien.x = 16 * xi + 20 + (alienDeathSprite.width - sprite.width)/2;
+            alien.y = 17 * yi + 128;
         }
+    }
+
+    uint8_t* deathCounters = new uint8_t[game.numAliens];
+    for(size_t i = 0; i < game.numAliens; i++) {
+        deathCounters[i] = 10;
     }
     
 
     uint32_t clearColour = rgbToUint32(0, 128, 0);
-    int playerMoveDirection = 1;
+    int playerMoveDirection = 0;
     gameRunning = true;
 
     while(!glfwWindowShouldClose(window) && gameRunning) {
@@ -369,10 +468,18 @@ int main() {
 
         // Draw Alien Sprites
         for(size_t ai = 0; ai < game.numAliens; ai++) {
+            if(!deathCounters[ai])
+                continue;
             const Alien& alien = game.aliens[ai];
-            size_t currentFrame = alienAnimation->time / alienAnimation->frameDuration;
-            const Sprite& sprite = *alienAnimation->frames[currentFrame];
-            bufferDrawSprite(&buffer, sprite, alien.x, alien.y, rgbToUint32(128, 0, 0));
+            if(alien.type == ALIEN_DEAD){
+                bufferDrawSprite(&buffer, alienDeathSprite, alien.x, alien.y, rgbToUint32(128, 0, 0));
+            }
+            else {
+                const SpriteAnimation& animation = alienAnimation[alien.type - 1];
+                size_t currentFrame = animation.time / animation.frameDuration;
+                const Sprite& sprite = *animation.frames[currentFrame];
+                bufferDrawSprite(&buffer, sprite, alien.x, alien.y, rgbToUint32(128, 0, 0));
+            }
         }
 
         // Draw Projectile Sprite
@@ -386,15 +493,13 @@ int main() {
         bufferDrawSprite(&buffer, playerSprite, game.player.x, game.player.y, rgbToUint32(128, 0, 0));
 
         // Update Animations
-        alienAnimation->time++;
-        if(alienAnimation->time == alienAnimation->numFrames * alienAnimation->frameDuration) {
-            if(alienAnimation->loop)
-                alienAnimation->time = 0;
-            else {
-                delete alienAnimation;
-                alienAnimation = nullptr;
+        for (size_t i = 0; i < 3; i++) {
+            alienAnimation[i].time++;
+            if (alienAnimation[i].time == alienAnimation[i].numFrames * alienAnimation[i].frameDuration) {
+                alienAnimation[i].time = 0;
             }
         }
+        
 
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
                         buffer.width, buffer.height,
@@ -405,13 +510,40 @@ int main() {
 
         glfwSwapBuffers(window);
 
-        for (size_t bi = 0; bi < game.numProjectiles;)
-        {
+        // Alien Movement
+        for (size_t ai = 0; ai < game.numAliens; ai++) {
+            const Alien& alien = game.aliens[ai];
+            if(alien.type == ALIEN_DEAD && deathCounters[ai]) {
+                deathCounters[ai]--;
+            }
+        }
+        
+
+        // Projectile Movement
+        for (size_t bi = 0; bi < game.numProjectiles;) {
             game.projectiles[bi].y += game.projectiles[bi].direction;
             if(game.projectiles[bi].y >= game.height || game.projectiles[bi].y < projectileSprite.height) {
                 game.projectiles[bi] = game.projectiles[game.numProjectiles - 1];
                 game.numProjectiles--;
                 continue;
+            }
+            for (size_t ai = 0; ai < game.numAliens; ai++) {
+                const Alien& alien = game.aliens[ai];
+                if(alien.type == ALIEN_DEAD)
+                    continue;
+                
+                const SpriteAnimation& animation = alienAnimation[alien.type - 1];
+                size_t currentFrame = animation.time / animation.frameDuration;
+                const Sprite& alienSprite = *animation.frames[currentFrame];
+                bool overlap = spriteOverLapCheck(projectileSprite, alienSprite, game.projectiles[bi].x, game.projectiles[bi].y, alien.x, alien.y);
+                if(overlap) {
+                    game.aliens[ai].type = ALIEN_DEAD;
+
+                    game.aliens[ai].x -= (alienDeathSprite.width - alienSprite.width)/2;
+                    game.projectiles[bi] = game.projectiles[game.numProjectiles - 1];
+                    game.numProjectiles--;
+                    continue;
+                }
             }
             bi++;
         }
@@ -446,11 +578,19 @@ int main() {
 
     glDeleteVertexArrays(1, &fullscreenTriangleVao);
 
-    delete[] alienSprite0.data;
-    delete[] alienSprite1.data;
-    delete[] alienAnimation->frames;
-    delete alienAnimation;
+    for(size_t i = 0; i < 6; ++i)
+    {
+        delete[] alienSprites[i].data;
+    }
 
+    delete[] alienDeathSprite.data;
+
+    for(size_t i = 0; i < 3; ++i)
+    {
+        delete[] alienAnimation[i].frames;
+    }
+
+    delete[] deathCounters;
     delete[] buffer.data;
     delete[] game.aliens;
     
