@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+
+/glew-2.2.0
+/vscode
