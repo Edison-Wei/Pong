@@ -1,15 +1,25 @@
-# Retro-Games
+# Pong
+I will be recreating the game Pong programming in Java with the help of JavaFX to render the graphical interface. 
 
-This project I will be programming 3 popular Retro Games with the help of 3 different programming languages.
-The games and the languages I will be programming with are:
-	- Pong with Java and Javafx
-	- Space Invaders with C++
-	- Pool with Swift and SwiftUI
+Some goals and learning outcomes from creating Pong:
+- Plan, organize, and execute till completion of Pong
+- Improve my knowledge and experience with Object Oriented Programming (OOP)
+- Use threads to help with object movement and collision detection
+- Design a user-friendly interface and simple experience
 
-Pong will be programmed in Java, using the JavaFX library as the GUI.
-How Pong works is that there are two paddles, one for the player and one for a bot, and a ball that increases in speed everytime it hits a paddles. If the ball passes a paddle a point is awarded.
 
-The Space Invaders game will be programmed in C++, with the help of 
+## Setup
+1. To begin, Download or clone this repository to your local machine.
 
-### 
-With the intention to write clean code, having most functions intended to do one thing
+2. Ensure you have Java installed on your system. Try ``` java -version ``` in the terminal to check.
+If not, you can download from the [Java Website](https://www.java.com/). Any version will work for the application to run correctly.
+
+3. Then, Head over to the [JavaFx website](https://openjfx.io/) and download version 21.0.4 of the SDK for your OS.
+
+4. Using the following command to compile and run the application.
+``` command
+java --module-path "/Path/To/javafx-sdk-21.0.4/lib" --add-modules javafx.controls,javafx.fxml Pong_Game/src/pong/*.java
+```
+Make sure to replace '/Path/To/' to your home directory to the file location.
+
+5. You are all set. Enjoy, the game!!
