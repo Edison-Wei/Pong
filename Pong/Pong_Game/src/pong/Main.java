@@ -29,7 +29,12 @@ public class Main extends Application {
 		rootPane = new Pane();
 		rootPane.setStyle("-fx-background-color: Black");
 		
-		menuScreen();
+		// Creates a menu screen
+		Pane menu = createMenuScreen();
+		menu.setTranslateX(190);
+		menu.setTranslateY(150);
+		
+		rootPane.getChildren().add(menu);
 		
 		Scene scene = new Scene(rootPane, 500, 500);
 //		scene.setFill(Color.BLACK);
@@ -37,16 +42,6 @@ public class Main extends Application {
 		primaryStage.setTitle("Pong");
 		primaryStage.setScene(scene);
 		primaryStage.show();
-	}
-	
-	// Creates and adds the collection of nodes to the rootPane
-	void menuScreen() {
-		
-		Pane menu = createMenuScreen();
-		menu.setTranslateX(190);
-		menu.setTranslateY(150);
-		
-		rootPane.getChildren().add(menu);
 	}
 	
 	public Pane createMenuScreen() {
@@ -79,15 +74,15 @@ public class Main extends Application {
 		
 		VBox scoreBoard = new VBox(5);
 		
-		Text userText = createText("Player", 12);
-		Text botText = createText("Bot", 12);
-//		Text userScore = createText("0", 12);
-//		Text botScore = createText("0", 12);
-		Text[] score = {createText("0", 12), createText("0", 12)};
+		Text userText = createText("Player", 20);
+		Text botText = createText("Bot", 20);
+		Text[] score = {createText("0", 18), createText("0", 18)};
 		
 		// Change the x coordinates of labelPane, ScorePane, and scoreBoard
 		HBox labelPane = new HBox(15, userText, botText);
-		HBox scorePane = new HBox(25, score[0], score[1]);
+		HBox scorePane = new HBox(50, score[0], score[1]);
+		scorePane.setTranslateX(20);
+		scoreBoard.setTranslateX(200);
 		scoreBoard.getChildren().addAll(labelPane, scorePane);
 		
 		Pane gamePane = new Pane(scoreBoard);
@@ -104,9 +99,9 @@ public class Main extends Application {
 	
 	/***
 	 * Makes a Text object with .setFont style of
-	 * "Arial" , FontWeight.MEDIUM, FontPosture.REGULAR, and size being given
+	 * "Arial" , FontWeight.MEDIUM, FontPosture.REGULAR, and size given
 	 * @param text an String of the given word
-	 * @param size an int with the size of the text
+	 * @param size an int on the size of text
 	 * @return an Text object with customized style
 	 */
 	Text createText(String text, int size) {
@@ -116,9 +111,4 @@ public class Main extends Application {
 		
 		return newText;
 	}
-	
-	// Can add later
-//	void difficulty() {
-//		
-//	}
 }

@@ -1,0 +1,6 @@
+# Build stage
+
+# Start stage
+
+FROM ubuntu:latest
+

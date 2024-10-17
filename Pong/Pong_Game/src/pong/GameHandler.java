@@ -19,7 +19,10 @@ public class GameHandler extends Thread {
 	private Paddle bot;		//	Bot x = 460 y = 145
 	private Ball ball;
 	
-	private int SLEEP_TIME_MILLISECONDS = 10;
+	private int botScore;
+	private int playerScore;
+	
+	private final int SLEEP_TIME_MILLISECONDS = 10;
 	private double INCREASEBYVECLOCITY = .2;
 	
 	/**
@@ -32,6 +35,9 @@ public class GameHandler extends Thread {
 	GameHandler(Pane rootPane, Text[] score) {
 		this.rootPane = rootPane;
 		this.score = score;
+		this.playerScore = 0;
+		this.botScore = 0;
+		
 		countDownTimerText = createCountDownTimer();
 		player = new Paddle(20, 250, Color.BLUE);
 		bot = new Paddle(465, 250, Color.RED);
@@ -43,23 +49,23 @@ public class GameHandler extends Thread {
 
 			@Override
 			public void handle(MouseEvent mouse) {
-				player.updatePaddleYLocation(mouse.getY() - 22.5);// center it
+				player.updatePaddleYLocation(mouse.getY() - 22.5);
 			}
 			
 		});
 	}
 	
 	public void run() {
-		while(bot.getScore() != 3 && player.getScore() != 3) { // Once finished show a game over screen
+		while(playerScore < 3 && botScore < 3) { // Once finished show a game over screen
 			// Fix this broken math
-			ball.sendToRandomDirection();
+			ball.randomDirection();
 			while(!ballPassedBotPaddle(ball.getXCoords(), ball.getYCoords()) && !ballPassedPlayerPaddle(ball.getXCoords(), ball.getYCoords())) {
 				double newX = ball.getXCoords() + ball.getXVelocity();
 				double newY = ball.getYCoords() + ball.getYVelocity();
 				
 				// tests if the next movement of the ball exceeds the y borders
 				// if true switch the velocity to either positive or negative
-				if(checkBallNextPositionInBounds(newY)) {
+				if(checkBallNextPositionIsInBounds(newY)) {
 					bounceOffWall();
 					// this sets the ball right at the border so clipping of edges occur
 					newY = (ball.getRadius() > newY) ? ball.getRadius() : 500-ball.getRadius();
@@ -70,17 +76,18 @@ public class GameHandler extends Thread {
 				// This checks if the next position of the ball is going to pass either paddles
 				if(player.getXCoords()+player.getWidth() >= newX || newX >= bot.getXCoords()) {
 					if(ballPassedBotPaddle(newX, newY))
-						addOnePoint(score[0]); // add a point to Player score
+						addOnePoint(score[0]); // add a point to the Player score
 					else if(ballPassedPlayerPaddle(newX, newY))
-						addOnePoint(score[1]); // add a point to Bot score	
-					else if(!checkIfBallHitsAPaddle(newX, newY)) {
+						addOnePoint(score[1]); // add a point to the Bot score	
+					else if(!checkBallHitsAPaddle(newX, newY)) {
 						bounceOffPaddle();
 						ball.increaseVelocity(INCREASEBYVECLOCITY);
 					}
 				}
 				
 				// Update bot location
-				updateBotLocation();
+				bot.updatePaddleYLocation(ball.getYCoords() - 22.5);
+				// Take (430 - positionOfBallY)/yVelocity = numberOfSteps //maybe another way
 				ball.updateBall(newX, newY);
 				
 				try {
@@ -92,11 +99,13 @@ public class GameHandler extends Thread {
 				}
 			}
 			// Once the ball has passed either paddle
-			// Cause the Thread to sleep for 5 seconds
+			// The thread will sleep for 5 seconds
 			// reset ball location to center
 			resetBallLocation(); // 1 second sleep
 			sleepCountDown(); 	// 4 second sleep with a count down timer 
 		}
+		
+		
 	}
 	
 	/***
@@ -125,46 +134,58 @@ public class GameHandler extends Thread {
 		return false;
 	}
 	
+	/***
+	 * When the ball is about to touch a wall 
+	 * switch the Y direction to be kept in play
+	 */
 	private void bounceOffWall() {
 		ball.setyVelocity(ball.getYVelocity()*-1);
 	}
 	
+	/***
+	 * When the ball is about to a paddle
+	 * switch the X direction to be kept in play
+	 */
 	private void bounceOffPaddle() {
 		ball.setxVelocity(ball.getXVelocity()*-1);
 	}
 
+	/***
+	 * 
+	 * @param current
+	 */
 	private void addOnePoint(Text current) {
 		if(ball.getXCoords() < 250) {
-			bot.increaseScore(); // could combine to one method
-			current.setText("" + bot.getScore());
+			botScore++;
+			current.setText("" + botScore);
 		}
 		else {
-			player.increaseScore(); // could combine to one method
-			current.setText("" + player.getScore());
+			playerScore++;
+			current.setText("" + playerScore);
 		}
 	}
 	
-	private boolean checkBallNextPositionInBounds(double newY) {
+	private boolean checkBallNextPositionIsInBounds(double newY) {
 		return (7.5 > newY || newY > 492.5) ? true : false;
 	}
 	
 	// inclusive
-	private boolean checkIfBallHitsAPaddle(double newX, double newY) {
-		if((player.getXCoords()+7.5 <= newX && player.getXCoords()+player.getWidth() >= newX)
-				|| (bot.getXCoords() <= newX && bot.getXCoords()+7.5 >= newX)) {
-			if(player.getYCoords() <= newY && player.getYCoords() + 45 >= newY)
+	private boolean checkBallHitsAPaddle(double newX, double newY) {
+		double playerXCoords = player.getXCoords();
+		double botXCoords = bot.getXCoords();
+		double playerYCoords = player.getYCoords();
+		double botYCoords = bot.getYCoords();
+		
+		if((playerXCoords+7.5 <= newX && playerXCoords+player.getWidth() >= newX)
+				|| (botXCoords <= newX && botXCoords+7.5 >= newX)) {
+			if(playerYCoords <= newY && playerYCoords + 45 >= newY)
 				return true;
-			if(bot.getYCoords() <= newY && bot.getYCoords() + 45 >= newY)
+			if(botYCoords <= newY && botYCoords + 45 >= newY)
 				return true;
 		}
 		return false;
 	}
 	
-	private void updateBotLocation() {
-		bot.updatePaddleYLocation(ball.getYCoords() - 22.5);
-		// Take (430 - positionOfBallY)/yVelocity = numberOfSteps //maybe another way
-		
-	}
 	
 	private boolean resetBallLocation() {
 		try {
@@ -173,7 +194,7 @@ public class GameHandler extends Thread {
 			e.printStackTrace();
 			return false;
 		}
-		ball.centerBallLocation();
+		ball.centerLocation();
 		return true;
 	}
 	

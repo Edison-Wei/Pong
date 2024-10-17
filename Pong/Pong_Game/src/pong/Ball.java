@@ -69,7 +69,7 @@ public class Ball {
 		yVelocity = (yVelocity < 0) ? yVelocity+(increase*-1) : yVelocity+increase;
 	}
 
-	void sendToRandomDirection() {
+	void randomDirection() {
 		// Find a way to send the ball in a random direction
 		// either use trig angles to calculate
 		// or calculate from 180 degrees and figure the x and y after
@@ -79,7 +79,7 @@ public class Ball {
 //		System.out.println("x = " + xVelocity + " y = " + yVelocity);
 	}
 	
-	void centerBallLocation() {
+	void centerLocation() {
 		ball.setTranslateX(250);
 		ball.setTranslateY(250);
 	}
