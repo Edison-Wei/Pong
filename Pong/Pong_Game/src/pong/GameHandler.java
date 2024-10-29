@@ -1,6 +1,8 @@
 package pong;
 
 import javafx.event.EventHandler;
+import javafx.scene.control.Button;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
@@ -8,12 +10,16 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
 
-public class GameHandler extends Thread {
+public class GameHandler implements Runnable{
 
-	private Pane rootPane;
+	private Stage stageEnvironment;
+	private Pane gamePane;
+	private Pane endScreen;
 	private Text[] score; // score[0] == Player, score[1] == Bot
 	private Text countDownTimerText;
+	private Text winnerLabel;
 	
 	private Paddle player;	//	Player x = 20 y = 145
 	private Paddle bot;		//	Bot x = 460 y = 145
@@ -23,7 +29,13 @@ public class GameHandler extends Thread {
 	private int playerScore;
 	
 	private final int SLEEP_TIME_MILLISECONDS = 10;
-	private double INCREASEBYVECLOCITY = .2;
+	private double INCREASEBYVECLOCITY = 11.2;
+	private boolean ballPassed = false;
+	private boolean pauseGame = false;
+	private boolean closeGame = false;
+	
+//	private TimeOut timeOutGame;
+//	private Thread timeOutThread;
 	
 	/**
 	 * Constructor to setup the game environment
@@ -32,20 +44,24 @@ public class GameHandler extends Thread {
 	 * @param rootPane a Pane object with connected to the Stage
 	 * @param score a Text array containing the points of each side
 	 */
-	GameHandler(Pane rootPane, Text[] score) {
-		this.rootPane = rootPane;
+	GameHandler(Stage stageEnvironment, Pane gamePane, Text[] score) {
+		this.stageEnvironment = stageEnvironment;
+		this.gamePane = gamePane;
 		this.score = score;
 		this.playerScore = 0;
-		this.botScore = 0;
+		this.botScore = 2;
+		this.ballPassed = false;
 		
+		
+		endScreen = createEndScreen();
 		countDownTimerText = createCountDownTimer();
 		player = new Paddle(20, 250, Color.BLUE);
 		bot = new Paddle(465, 250, Color.RED);
 		ball = new Ball(250, 250);
 		
-		this.rootPane.getChildren().addAll(player.getPaddle(), bot.getPaddle(), ball.getBall(), countDownTimerText);
+		this.gamePane.getChildren().addAll(player.getPaddle(), bot.getPaddle(), ball.getBall(), countDownTimerText, endScreen);
 		
-		this.rootPane.setOnMouseMoved(new EventHandler<MouseEvent>() {
+		this.gamePane.setOnMouseMoved(new EventHandler<MouseEvent>() {
 
 			@Override
 			public void handle(MouseEvent mouse) {
@@ -53,86 +69,96 @@ public class GameHandler extends Thread {
 			}
 			
 		});
+		
+		this.gamePane.setOnKeyPressed(e -> { // fix 
+			System.out.println("Someting happening");
+			if(e.getCode() == KeyCode.A) {
+				System.out.println("Pressed" + e.getCode());
+				pauseGame = !pauseGame;
+			}
+		});
 	}
+
 	
+	@Override
 	public void run() {
-		while(playerScore < 3 && botScore < 3) { // Once finished show a game over screen
-			// Fix this broken math
-			ball.randomDirection();
-			while(!ballPassedBotPaddle(ball.getXCoords(), ball.getYCoords()) && !ballPassedPlayerPaddle(ball.getXCoords(), ball.getYCoords())) {
-				double newX = ball.getXCoords() + ball.getXVelocity();
-				double newY = ball.getYCoords() + ball.getYVelocity();
-				
-				// tests if the next movement of the ball exceeds the y borders
-				// if true switch the velocity to either positive or negative
-				if(checkBallNextPositionIsInBounds(newY)) {
-					bounceOffWall();
-					// this sets the ball right at the border so clipping of edges occur
-					newY = (ball.getRadius() > newY) ? ball.getRadius() : 500-ball.getRadius();
-				}
-				
-				// This part needs to be fixed when hitting the paddle
-				// write a check if the ball were to pass the paddles
-				// This checks if the next position of the ball is going to pass either paddles
-				if(player.getXCoords()+player.getWidth() >= newX || newX >= bot.getXCoords()) {
-					if(ballPassedBotPaddle(newX, newY))
-						addOnePoint(score[0]); // add a point to the Player score
-					else if(ballPassedPlayerPaddle(newX, newY))
-						addOnePoint(score[1]); // add a point to the Bot score	
-					else if(!checkBallHitsAPaddle(newX, newY)) {
-						bounceOffPaddle();
-						ball.increaseVelocity(INCREASEBYVECLOCITY);
+		System.out.println("Game Started");
+		while(!closeGame) {
+			sleepCountDown();
+			while(playerScore < 3 && botScore < 3) {
+				ball.randomDirection();
+				while(!ballPassed) {
+					if(pauseGame) {
+						
+						try {
+							Thread.sleep(1000000);
+						} catch(InterruptedException e) {
+							Thread.currentThread().interrupt();
+						}
+					}
+					
+					double newX = ball.getXCoords() + ball.getXVelocity();
+					double newY = ball.getYCoords() + ball.getYVelocity();
+					
+					// Check if the next position of the ball exceeds the top or bottom borders
+					// if true switch the velocity of y to positive or negative 
+					if(checkBallNextYPositionIsInBounds(newY)) {
+						bounceOffWall();
+						// Sets the ball next to the top or bottom border so no clipping occurs
+						newY = (ball.getRadius() > newY) ? ball.getRadius() : 500-ball.getRadius();
+					}
+					
+					// This checks if the next position of the ball is going to pass either paddles
+					if(player.getXCoords()+player.getWidth() >= newX || newX >= bot.getXCoords()) {
+						if(newX > 490) {
+							addOnePoint(score[0]);
+							ballPassed = true;
+						}
+						else if(newX < 10) {
+							addOnePoint(score[1]);
+							ballPassed = true;
+						}
+						else if(checkBallHitsAPaddle(newX, newY)) {
+							bounceOffPaddle();
+							ball.increaseVelocity(INCREASEBYVECLOCITY);
+						}
+					}
+					
+					// Update the bot y location
+					bot.updatePaddleYLocation(ball.getYCoords() - 22.5);
+					
+					// Take (430 - positionOfBallY)/yVelocity = numberOfSteps //maybe another way
+					ball.updateBall(newX, newY);
+					
+					try {
+						Thread.sleep(SLEEP_TIME_MILLISECONDS);
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
 					}
 				}
 				
-				// Update bot location
-				bot.updatePaddleYLocation(ball.getYCoords() - 22.5);
-				// Take (430 - positionOfBallY)/yVelocity = numberOfSteps //maybe another way
-				ball.updateBall(newX, newY);
-				
-				try {
-					Thread.sleep(SLEEP_TIME_MILLISECONDS);
-				} catch (Exception e) {
-					// Create a ThreadException class 
-					// should extend Exception and be some message on screen that it broke
-					e.printStackTrace();
+				if(playerScore == 3 || botScore == 3) {
+					System.out.println("Someone reached 3");
+					continue;
 				}
+				
+				// Once a point has been scored
+				// sleep the thread for 5 seconds 
+				// and recenter the ball location
+				ballPassed = false;
+				resetBallLocation(); // 1 second sleep
+				sleepCountDown(); 	// 4 second sleep with a count down timer 
 			}
-			// Once the ball has passed either paddle
-			// The thread will sleep for 5 seconds
-			// reset ball location to center
-			resetBallLocation(); // 1 second sleep
-			sleepCountDown(); 	// 4 second sleep with a count down timer 
+			
+			String winner = (playerScore == 3 ? "You win!!" : "Bot win!!");
+			
+			winnerLabel.setText(winner);
+			endScreen.setTranslateX(0);
+			
 		}
-		
-		
 	}
 	
-	/***
-	 * Does a check if the Ball next position is going to pass half the Bot paddle
-	 * @param newX an double Ball next X position
-	 * @param newY an double Ball next Y position
-	 * @return true if the new position of the ball passes half the paddle, false if not
-	 */
-	private boolean ballPassedBotPaddle(double newX, double newY) {
-		if(newX > bot.getXCoords()-7.5)
-			if(bot.getYCoords() >= newY || bot.getYCoords() + 45 <= newY)
-				return true;
-		return false;
-	}
-
-	/***
-	 * Does a check if the Ball next position is going to pass half the Player paddle
-	 * @param newX an double Ball next X position
-	 * @param newY an double Ball next Y position
-	 * @return true if the new position of the ball passes half the paddle, false if not
-	 */
-	private boolean ballPassedPlayerPaddle(double newX, double newY) {
-		if(newX < player.getXCoords()+7.5)
-			if(player.getYCoords() >= newY || player.getYCoords() + 45 <= newY)
-				return true;
-		return false;
-	}
+	
 	
 	/***
 	 * When the ball is about to touch a wall 
@@ -165,40 +191,58 @@ public class GameHandler extends Thread {
 		}
 	}
 	
-	private boolean checkBallNextPositionIsInBounds(double newY) {
+	private boolean checkBallNextYPositionIsInBounds(double newY) {
 		return (7.5 > newY || newY > 492.5) ? true : false;
 	}
 	
-	// inclusive
+	/***
+	 * 
+	 * @param newX
+	 * @param newY
+	 * @return
+	 */
 	private boolean checkBallHitsAPaddle(double newX, double newY) {
 		double playerXCoords = player.getXCoords();
 		double botXCoords = bot.getXCoords();
 		double playerYCoords = player.getYCoords();
 		double botYCoords = bot.getYCoords();
+
 		
-		if((playerXCoords+7.5 <= newX && playerXCoords+player.getWidth() >= newX)
-				|| (botXCoords <= newX && botXCoords+7.5 >= newX)) {
-			if(playerYCoords <= newY && playerYCoords + 45 >= newY)
+		if(playerXCoords-5 <= newX && playerXCoords+player.getWidth() >= newX) {
+			if(playerYCoords <= newY && playerYCoords + 45 >= newY) {
 				return true;
-			if(botYCoords <= newY && botYCoords + 45 >= newY)
+			}	
+		}
+		
+		if(botXCoords <= newX && botXCoords+bot.getWidth()+5 >= newX) {
+			if(botYCoords <= newY && botYCoords + 45 >= newY) {
 				return true;
+			}	
 		}
 		return false;
 	}
 	
 	
-	private boolean resetBallLocation() {
+	/***
+	 * Resets the Ball location to be centered at
+	 * x = 250
+	 * y = 250
+	 * with a 1 second delay  
+	 */
+	private void resetBallLocation() {
 		try {
 			Thread.sleep(1000);
-		} catch(Exception e) {
-			e.printStackTrace();
-			return false;
+		} catch(InterruptedException e) {
+			Thread.currentThread().interrupt();
 		}
 		ball.centerLocation();
-		return true;
 	}
 	
-	private boolean sleepCountDown() {
+	/***
+	 * Displays a Count Down Timer from 3, 2, 1 each with a delay of 1 second.
+	 * Moves the countDownTimerText out of bounds at 0
+	 */
+	private void sleepCountDown() {
 		int countDownTimer = 3;
 		countDownTimerText.setText("" + countDownTimer); 
 		countDownTimerText.setTranslateX(235);
@@ -207,16 +251,14 @@ public class GameHandler extends Thread {
 		while(countDownTimer > 0) {
 			try {
 				Thread.sleep(1000);
-			} catch(Exception e) {
-				e.printStackTrace();
-				return false;
+			} catch(InterruptedException e) {
+				Thread.currentThread().interrupt();
 			}
 			countDownTimer--;
 			countDownTimerText.setText(""+ countDownTimer);
 		}
 		countDownTimerText.setTranslateX(500);
 		countDownTimerText.setTranslateY(500);
-		return true;
 	}
 	
 	private Text createCountDownTimer() {
@@ -226,6 +268,76 @@ public class GameHandler extends Thread {
 		newText.setTranslateX(500);
 		newText.setTranslateY(500);
 		return newText;
+	}
+	
+	/***
+	 * Makes a Text object with Font style of "Arial", Weight of MEDIUM
+	 * Posture of REGULAR and the size given
+	 * @param text a String containing a character phrase
+	 * @param size a int that the text size will become
+	 * @return an Text object with customized style
+	 */
+	Text createText(String text, int size) {
+		Text newText = new Text(text);
+		newText.setFont(Font.font("Arial", FontWeight.MEDIUM, FontPosture.REGULAR, size));
+		newText.setFill(Color.WHITE);
+		
+		return newText;
+	}
+	
+	/***
+	 * Creates a Pane object that will be used when the player or bot has won the match
+	 * Player can decide to play another match or quit the game.
+	 * @return a Pane that contains children of winnerLabel, playAgainLabel, yesbtn, nobtn
+	 */
+	Pane createEndScreen() {
+		Pane endScreen = new Pane();
+		endScreen.setStyle("-fx-background-color: Black");
+		endScreen.setPrefHeight(500);
+		endScreen.setPrefWidth(500);
+		endScreen.setTranslateX(500);
+		
+		winnerLabel = createText("... won", 25);
+		winnerLabel.setTranslateX(200);
+		winnerLabel.setTranslateY(100);
+		Text playAgainLabel = createText("Do you want to play again?", 25);
+		playAgainLabel.setTranslateX(100);
+		playAgainLabel.setTranslateY(250);
+		
+		Button yesbtn = new Button("YES");
+		yesbtn.setFont(Font.font("Arial", FontWeight.MEDIUM, FontPosture.REGULAR, 30));
+		yesbtn.setTextFill(Color.WHITE);
+		yesbtn.setTranslateX(100);
+		yesbtn.setTranslateY(350);
+		yesbtn.setStyle("-fx-background-color: Black");
+		yesbtn.setUnderline(true);
+		Button nobtn = new Button("NO");
+		nobtn.setFont(Font.font("Arial", FontWeight.MEDIUM, FontPosture.REGULAR, 30));
+		nobtn.setTextFill(Color.WHITE);
+		nobtn.setTranslateX(300);
+		nobtn.setTranslateY(350);
+		nobtn.setStyle("-fx-background-color: Black");
+		nobtn.setUnderline(true);
+		
+		yesbtn.setOnAction(e -> {
+			playerScore = 0;
+			botScore = 0;
+			score[0].setText("" + 0);
+			score[1].setText("" + 0);
+			
+			
+			endScreen.setTranslateX(500);
+			resetBallLocation();
+		});
+		
+		nobtn.setOnAction(e -> {
+			Thread.currentThread().interrupt();
+			stageEnvironment.close();
+		});
+		
+		endScreen.getChildren().addAll(winnerLabel, playAgainLabel, yesbtn, nobtn);
+		
+		return endScreen;
 	}
 
 }
