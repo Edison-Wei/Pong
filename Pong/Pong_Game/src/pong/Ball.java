@@ -4,15 +4,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 public class Ball {
-//	private double x;
-//	private double y;
 	private double xVelocity = -2.5;
-	private double yVelocity = .5;
+	private double yVelocity = .7;
 	private Circle ball;
 	
 	/***
 	 * Constructor with (int x, int y)
-	 * Creates a new Ball object with the given (x,y) coordinates on a pane
+	 * Creates a new Ball object with the given (x,y) coordinates on a 2D plane
 	 * @param x an int with the coordinates in the x-axis
 	 * @param y an int with the coordinates in the y-axis
 	 */
@@ -70,13 +68,29 @@ public class Ball {
 	}
 
 	void randomDirection() {
-		// Find a way to send the ball in a random direction
-		// either use trig angles to calculate
-		// or calculate from 180 degrees and figure the x and y after
-		double theta = Math.random() * (Math.PI/4);
-		xVelocity = (xVelocity > 0 ) ? Math.cos(theta)*-1 : Math.cos(theta);
-		yVelocity = (Math.random() < 0.5) ? Math.sin(theta*-1) : Math.sin(theta); // Goes the opposite direction
-//		System.out.println("x = " + xVelocity + " y = " + yVelocity);
+		double xVelo = Math.random() * Math.PI/4;
+		double yVelo = Math.random() * Math.PI/4;
+		
+		int quadrant = (int)(Math.random() * 4);
+		
+		switch(quadrant) {
+			case 2:
+				xVelocity = (-1) * xVelo;
+				yVelocity = yVelo;
+				break;
+			case 3:
+				xVelocity = (-1) * xVelo;
+				yVelocity = (-1) * yVelo;
+				break;
+			case 4:
+				xVelocity = xVelo;
+				yVelocity = (-1) * yVelo;
+				break;
+			default:
+				xVelocity = xVelo;
+				yVelocity = yVelo;
+				break;
+		}
 	}
 	
 	void centerLocation() {

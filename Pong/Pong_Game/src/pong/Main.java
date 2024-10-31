@@ -112,11 +112,6 @@ public class Main extends Application {
 		return newText;
 	}
 	
-	/***
-	 * 
-	 * @param gamePane
-	 * @return
-	 */
 	Text[] createScoreBoard(Pane gamePane) {
 		VBox scoreBoard = new VBox(5);
 		

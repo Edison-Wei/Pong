@@ -17,6 +17,7 @@ public class GameHandler implements Runnable{
 	private Stage stageEnvironment;
 	private Pane gamePane;
 	private Pane endScreen;
+	private Pane pauseScreen;
 	private Text[] score; // score[0] == Player, score[1] == Bot
 	private Text countDownTimerText;
 	private Text winnerLabel;
@@ -29,13 +30,10 @@ public class GameHandler implements Runnable{
 	private int playerScore;
 	
 	private final int SLEEP_TIME_MILLISECONDS = 10;
-	private double INCREASEBYVECLOCITY = 11.2;
+	private double INCREASEBYVECLOCITY = .5;
 	private boolean ballPassed = false;
 	private boolean pauseGame = false;
 	private boolean closeGame = false;
-	
-//	private TimeOut timeOutGame;
-//	private Thread timeOutThread;
 	
 	/**
 	 * Constructor to setup the game environment
@@ -49,17 +47,18 @@ public class GameHandler implements Runnable{
 		this.gamePane = gamePane;
 		this.score = score;
 		this.playerScore = 0;
-		this.botScore = 2;
+		this.botScore = 0;
 		this.ballPassed = false;
 		
-		
-		endScreen = createEndScreen();
 		countDownTimerText = createCountDownTimer();
+		endScreen = createEndScreen();
+		pauseScreen = createPauseScreen();
+		
 		player = new Paddle(20, 250, Color.BLUE);
 		bot = new Paddle(465, 250, Color.RED);
 		ball = new Ball(250, 250);
 		
-		this.gamePane.getChildren().addAll(player.getPaddle(), bot.getPaddle(), ball.getBall(), countDownTimerText, endScreen);
+		this.gamePane.getChildren().addAll(player.getPaddle(), bot.getPaddle(), ball.getBall(), countDownTimerText, pauseScreen, endScreen);
 		
 		this.gamePane.setOnMouseMoved(new EventHandler<MouseEvent>() {
 
@@ -70,11 +69,15 @@ public class GameHandler implements Runnable{
 			
 		});
 		
-		this.gamePane.setOnKeyPressed(e -> { // fix 
-			System.out.println("Someting happening");
-			if(e.getCode() == KeyCode.A) {
-				System.out.println("Pressed" + e.getCode());
+		this.gamePane.setOnKeyPressed(e -> {
+			if(e.getCode() == KeyCode.ESCAPE) {
 				pauseGame = !pauseGame;
+				if(pauseGame) {
+					pauseScreen.setTranslateX(0);
+				}
+				else {
+					pauseScreen.setTranslateX(500);
+				}
 			}
 		});
 	}
@@ -82,20 +85,12 @@ public class GameHandler implements Runnable{
 	
 	@Override
 	public void run() {
-		System.out.println("Game Started");
 		while(!closeGame) {
 			sleepCountDown();
 			while(playerScore < 3 && botScore < 3) {
 				ball.randomDirection();
 				while(!ballPassed) {
-					if(pauseGame) {
-						
-						try {
-							Thread.sleep(1000000);
-						} catch(InterruptedException e) {
-							Thread.currentThread().interrupt();
-						}
-					}
+					while(pauseGame) {}
 					
 					double newX = ball.getXCoords() + ball.getXVelocity();
 					double newY = ball.getYCoords() + ball.getYVelocity();
@@ -125,9 +120,11 @@ public class GameHandler implements Runnable{
 					}
 					
 					// Update the bot y location
-					bot.updatePaddleYLocation(ball.getYCoords() - 22.5);
+					double location = ball.getYCoords() - bot.getYCoords() - 22.5;
+					location = Math.log10(location * location);
+					location = (ball.getYCoords() < bot.getYCoords()? location*-1 : location);
+					bot.updatePaddleYLocation(bot.getYCoords() + location);
 					
-					// Take (430 - positionOfBallY)/yVelocity = numberOfSteps //maybe another way
 					ball.updateBall(newX, newY);
 					
 					try {
@@ -138,7 +135,6 @@ public class GameHandler implements Runnable{
 				}
 				
 				if(playerScore == 3 || botScore == 3) {
-					System.out.println("Someone reached 3");
 					continue;
 				}
 				
@@ -176,10 +172,7 @@ public class GameHandler implements Runnable{
 		ball.setxVelocity(ball.getXVelocity()*-1);
 	}
 
-	/***
-	 * 
-	 * @param current
-	 */
+
 	private void addOnePoint(Text current) {
 		if(ball.getXCoords() < 250) {
 			botScore++;
@@ -196,10 +189,10 @@ public class GameHandler implements Runnable{
 	}
 	
 	/***
-	 * 
-	 * @param newX
-	 * @param newY
-	 * @return
+	 * Checks the Ball location with both player and bot paddles.
+	 * @param newX a double of the next X location for the ball
+	 * @param newY a double of the next Y location for the ball
+	 * @return True if the ball location and paddle location are the same, false otherwise
 	 */
 	private boolean checkBallHitsAPaddle(double newX, double newY) {
 		double playerXCoords = player.getXCoords();
@@ -208,13 +201,13 @@ public class GameHandler implements Runnable{
 		double botYCoords = bot.getYCoords();
 
 		
-		if(playerXCoords-5 <= newX && playerXCoords+player.getWidth() >= newX) {
+		if(0 <= newX && playerXCoords+player.getWidth() >= newX) {
 			if(playerYCoords <= newY && playerYCoords + 45 >= newY) {
 				return true;
 			}	
 		}
 		
-		if(botXCoords <= newX && botXCoords+bot.getWidth()+5 >= newX) {
+		if(botXCoords <= newX && 500 >= newX) {
 			if(botYCoords <= newY && botYCoords + 45 >= newY) {
 				return true;
 			}	
@@ -261,18 +254,10 @@ public class GameHandler implements Runnable{
 		countDownTimerText.setTranslateY(500);
 	}
 	
-	private Text createCountDownTimer() {
-		Text newText = new Text("3");
-		newText.setFont(Font.font("Arial", FontWeight.MEDIUM, FontPosture.REGULAR, 50));
-		newText.setFill(Color.WHITE);
-		newText.setTranslateX(500);
-		newText.setTranslateY(500);
-		return newText;
-	}
 	
 	/***
 	 * Makes a Text object with Font style of "Arial", Weight of MEDIUM
-	 * Posture of REGULAR and the size given
+	 * Posture of REGULAR and the size given.
 	 * @param text a String containing a character phrase
 	 * @param size a int that the text size will become
 	 * @return an Text object with customized style
@@ -283,6 +268,40 @@ public class GameHandler implements Runnable{
 		newText.setFill(Color.WHITE);
 		
 		return newText;
+	}
+	
+	
+	/***
+	 * Creates a Pane object that will be used to count down the start of a point
+	 * @return a Pane that contains children of countDownLabel
+	 */
+	private Text createCountDownTimer() {
+		Text countDownLabel = createText("3", 50);
+		countDownLabel.setTranslateX(500);
+		countDownLabel.setTranslateY(500);
+		return countDownLabel;
+	}
+	
+	/***
+	 * Creates a Pane object that will be used when the player pauses the match.
+	 * @return a Pane that contains children of pauseLabel, coninuteLabel
+	 */
+	Pane createPauseScreen() {
+		Pane pauseScreen = new Pane();
+		pauseScreen.setTranslateX(500);
+		
+		Text pauseLabel = createText("GAME PAUSED", 40);
+		pauseLabel.setTranslateX(110);
+		pauseLabel.setTranslateY(150);
+		
+		
+		Text continueLabel = createText("Press 'ESC' to continue", 25);
+		continueLabel.setTranslateX(130);
+		continueLabel.setTranslateY(300);
+		
+		pauseScreen.getChildren().addAll(pauseLabel, continueLabel);
+		
+		return pauseScreen;
 	}
 	
 	/***
