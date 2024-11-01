@@ -1,6 +1,7 @@
 package pong;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
@@ -14,6 +15,7 @@ import javafx.scene.text.FontPosture;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 public class Main extends Application {
 	
@@ -40,6 +42,15 @@ public class Main extends Application {
 		rootPane.getChildren().add(menu);
 		
 		Scene scene = new Scene(rootPane, 500, 500);
+		
+		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+			
+			@Override
+			public void handle(WindowEvent arg0) {
+				Platform.exit();
+				System.exit(0);
+			}
+		});
 		
 		primaryStage.setTitle("Pong");
 		primaryStage.setScene(scene);
